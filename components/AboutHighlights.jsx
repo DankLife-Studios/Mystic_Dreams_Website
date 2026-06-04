@@ -3,23 +3,25 @@ import Icon from "./Icon";
 
 export default function AboutHighlights() {
   return (
-    <div className="grid gap-5 sm:grid-cols-2">
-      {ABOUT_HIGHLIGHTS.map((item, i) => (
+    <div className="surface-card overflow-hidden">
+      {ABOUT_HIGHLIGHTS.map((item, index) => (
         <div
           key={item.title}
-          className="surface-card glass-card-hover flex gap-4 rounded-2xl border-l-4 border-l-mystic p-6"
+          className={`feature-row items-start ${
+            index < ABOUT_HIGHLIGHTS.length - 1 ? "" : ""
+          }`}
         >
-          <span className="icon-box icon-box-md shrink-0">
-            <Icon name={item.icon} size="md" className="icon-fancy" />
+          <span className="step-timeline-number shrink-0">
+            {String(index + 1).padStart(2, "0")}
           </span>
-          <div>
-            <span className="font-display text-sm font-bold text-mystic">
-              0{i + 1}
-            </span>
-            <h3 className="text-heading font-display mt-2 text-lg font-bold">
+          <span className="icon-box icon-box-md shrink-0">
+            <Icon name={item.icon} size="sm" className="icon-fancy" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-heading font-display text-base font-semibold">
               {item.title}
             </h3>
-            <p className="text-body mt-2 text-sm leading-relaxed">{item.text}</p>
+            <p className="text-body mt-1 text-sm leading-relaxed">{item.text}</p>
           </div>
         </div>
       ))}

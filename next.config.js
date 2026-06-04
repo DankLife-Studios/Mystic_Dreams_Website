@@ -1,5 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/whitelist",
+        destination: "/connect#whitelist",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

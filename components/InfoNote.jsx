@@ -7,18 +7,18 @@ export default function InfoNote({
   className = "",
 }) {
   const tones = {
-    default: "border-mystic/25 bg-mystic/5",
-    warn: "border-amber-500/30 bg-amber-500/8",
+    default: "border-[var(--border)] bg-[var(--surface-muted)]",
+    warn: "border-amber-500/25 bg-amber-500/5",
   };
 
   return (
     <div
-      className={`flex gap-3 rounded-2xl border px-5 py-4 ${tones[tone] || tones.default} ${className}`}
+      className={`surface-card flex gap-3 p-4 sm:p-5 ${tones[tone] || tones.default} ${className}`}
     >
       <span className="icon-box icon-box-md shrink-0">
         <Icon
           name={tone === "warn" ? "circle-xmark" : "circle-info"}
-          size="md"
+          size="sm"
         />
       </span>
       <div className="min-w-0 text-sm">

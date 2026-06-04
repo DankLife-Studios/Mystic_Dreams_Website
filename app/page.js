@@ -1,7 +1,6 @@
 import Hero from "@/components/Hero";
 import FeatureGrid from "@/components/FeatureGrid";
-import StatsStrip from "@/components/StatsStrip";
-import SectionHeading from "@/components/SectionHeading";
+import SectionBlock from "@/components/SectionBlock";
 import AboutHighlights from "@/components/AboutHighlights";
 import CTASection from "@/components/CTASection";
 import Link from "next/link";
@@ -10,44 +9,35 @@ export default function HomePage() {
   return (
     <>
       <Hero />
-      <div className="-mt-8 relative z-10">
-        <StatsStrip />
-      </div>
 
-      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
-        <SectionHeading
-          eyebrow="The Experience"
-          title="Built for"
-          highlight="Immersion"
-          description="Every system is handcrafted for serious roleplay — from whitelisted businesses to deep criminal and civilian economies."
-        />
-        <div className="mt-12">
-          <AboutHighlights />
-        </div>
-      </section>
+      <SectionBlock
+        className="py-16 sm:py-20"
+        eyebrow="The experience"
+        title="Built for"
+        highlight="immersion"
+        description="Every system is handcrafted for serious roleplay — from whitelisted businesses to deep criminal and civilian economies."
+      >
+        <AboutHighlights />
+      </SectionBlock>
 
-      <div className="section-divider mx-auto max-w-4xl" />
-
-      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
-        <SectionHeading
-          eyebrow="What Awaits You"
-          title="Explore the"
-          highlight="City"
-        />
-        <div className="mt-14">
-          <FeatureGrid compact />
-        </div>
-        <div className="mt-14 text-center">
+      <SectionBlock
+        className="border-t border-[var(--border)] py-16 sm:py-20"
+        eyebrow="What awaits you"
+        title="Explore the"
+        highlight="city"
+      >
+        <FeatureGrid variant="grid" />
+        <p className="mt-8 text-center">
           <Link href="/features" className="btn-primary">
-            View All Features
+            View all features
           </Link>
-        </div>
-      </section>
+        </p>
+      </SectionBlock>
 
-      <section className="pb-24">
+      <section className="border-t border-[var(--border)] py-16 sm:py-20">
         <CTASection
-          primaryHref="/whitelist"
-          primaryLabel="Start Whitelist"
+          primaryHref="/connect"
+          primaryLabel="Get started"
         />
       </section>
     </>

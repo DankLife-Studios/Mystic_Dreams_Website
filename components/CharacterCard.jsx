@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Icon from "./Icon";
+import { formatPhone } from "@/lib/format";
 
 export default function CharacterCard({ character }) {
-  const [vehiclesOpen, setVehiclesOpen] = useState(false);
+  const [garageOpen, setGarageOpen] = useState(true);
   const vehicles = character.vehicles || [];
+
   const formatMoney = (n) =>
     new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -13,135 +15,134 @@ export default function CharacterCard({ character }) {
       maximumFractionDigits: 0,
     }).format(n);
 
+  const formattedPhone = formatPhone(character.phone);
+
   const lastPlayed = character.lastLoggedOut
-    ? new Date(character.lastLoggedOut).toLocaleString()
+    ? new Date(character.lastLoggedOut).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      })
     : "Never";
 
   const displayName = character.characterName || character.name;
   const initial = displayName.charAt(0)?.toUpperCase() || "?";
 
   return (
-    <article className="surface-card group relative overflow-hidden rounded-3xl transition duration-300 hover:border-mystic/40 hover:shadow-lg hover:shadow-mystic/10">
-      <div className="relative p-6 sm:p-7">
-        <div className="flex items-start gap-4">
-          <div className="icon-box icon-on-gradient flex size-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-mystic to-mystic-dark shadow-md shadow-mystic/20">
-            <Icon name="user" size="lg" />
-            <span className="sr-only">{initial}</span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <span className="inline-flex rounded-full bg-mystic/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-mystic">
+    <article className="dash-char-card">
+      <div className="dash-char-header">
+        <div className="dash-char-avatar" aria-hidden>
+          {initial}
+        </div>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-md bg-mystic/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-mystic">
               Slot {character.cid}
             </span>
-            <h3 className="text-heading font-display mt-2 truncate text-xl font-bold tracking-tight">
-              {displayName}
-            </h3>
-            <p className="text-caption mt-0.5 truncate font-mono text-[11px]">
-              {character.citizenid}
-            </p>
+            {character.gangLabel && (
+              <span className="text-caption rounded-md border border-subtle px-2 py-0.5 text-[10px] font-medium">
+                {character.gangLabel}
+              </span>
+            )}
           </div>
+          <h3 className="text-heading font-display mt-2 truncate text-xl font-semibold tracking-tight">
+            {displayName}
+          </h3>
+          <p className="text-caption mt-0.5 font-mono text-xs">
+            {character.citizenid}
+          </p>
         </div>
+        <div className="text-left sm:text-right">
+          <p className="dash-char-stat-label">Last played</p>
+          <p className="dash-char-stat-value mt-1 text-xs font-medium">
+            {lastPlayed}
+          </p>
+        </div>
+      </div>
 
-        <dl className="mt-6 grid grid-cols-2 gap-3">
-          <Stat label="Job" value={character.jobLabel} sub={character.jobGrade} />
-          {character.gangLabel ? (
-            <Stat label="Gang" value={character.gangLabel} />
-          ) : (
-            <div />
+      <dl className="dash-char-stats">
+        <div className="dash-char-stat">
+          <dt className="dash-char-stat-label">Job</dt>
+          <dd className="dash-char-stat-value truncate">{character.jobLabel}</dd>
+          {character.jobGrade && (
+            <dd className="text-caption mt-0.5 truncate text-xs">
+              {character.jobGrade}
+            </dd>
           )}
-          <Stat label="Cash" value={formatMoney(character.cash)} accent />
-          <Stat label="Bank" value={formatMoney(character.bank)} accent />
-          {character.phone && (
-            <Stat label="Phone" value={character.phone} className="col-span-2" />
-          )}
-          <Stat
-            label="Last played"
-            value={lastPlayed}
-            className="col-span-2"
-            compact
-          />
-        </dl>
+        </div>
+        <div className="dash-char-stat">
+          <dt className="dash-char-stat-label">Cash</dt>
+          <dd className="dash-char-stat-value dash-char-stat-value-accent">
+            {formatMoney(character.cash)}
+          </dd>
+        </div>
+        <div className="dash-char-stat">
+          <dt className="dash-char-stat-label">Bank</dt>
+          <dd className="dash-char-stat-value dash-char-stat-value-accent">
+            {formatMoney(character.bank)}
+          </dd>
+        </div>
+        <div className="dash-char-stat">
+          <dt className="dash-char-stat-label">Phone</dt>
+          <dd className="dash-char-stat-value dash-char-stat-value-mono">
+            {formattedPhone || "—"}
+          </dd>
+        </div>
+      </dl>
 
-        <div className="mt-6 border-t border-subtle pt-5">
+      <div className="dash-char-garage">
+        <div className="dash-char-garage-head">
           <button
             type="button"
-            onClick={() => setVehiclesOpen((o) => !o)}
-            className="flex w-full items-center justify-between gap-2 text-left"
-            aria-expanded={vehiclesOpen}
+            onClick={() => setGarageOpen((o) => !o)}
+            className="text-heading flex items-center gap-2 text-sm font-semibold"
+            aria-expanded={garageOpen}
           >
-            <span className="text-caption flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
-              <Icon name="car" size="xs" />
-              Vehicles
-              <span className="rounded-full bg-mystic/15 px-2 py-0.5 tabular-nums text-mystic">
-                {vehicles.length}
-              </span>
+            <Icon name="car" size="xs" />
+            Garage
+            <span className="text-caption font-normal tabular-nums">
+              {vehicles.length}
             </span>
             <Icon
               name="arrow-down"
               size="xs"
-              className={`shrink-0 transition-transform ${vehiclesOpen ? "rotate-180" : ""}`}
+              className={`text-caption transition-transform ${garageOpen ? "rotate-180" : ""}`}
             />
           </button>
-
-          {vehiclesOpen && (
-            <div className="mt-3 space-y-2">
-              {vehicles.length === 0 ? (
-                <p className="text-body text-sm italic text-[var(--text-muted)]">
-                  No owned vehicles
-                </p>
-              ) : (
-                vehicles.map((v) => (
-                  <div
-                    key={`${v.plate}-${v.model}`}
-                    className="rounded-xl border border-subtle surface-muted px-3 py-2.5"
-                  >
-                    <p className="text-heading text-sm font-semibold">
-                      {v.modelLabel || v.model}
-                    </p>
-                    <dl className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                      <div>
-                        <dt className="text-caption text-[10px] uppercase tracking-wider">
-                          Plate
-                        </dt>
-                        <dd className="text-heading font-mono font-medium">
-                          {v.plate}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-caption text-[10px] uppercase tracking-wider">
-                          Status
-                        </dt>
-                        <dd className="text-heading font-medium">
-                          {v.inGarage ? `Garage · ${v.garage}` : "Out"}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
         </div>
+
+        {garageOpen &&
+          (vehicles.length === 0 ? (
+            <p className="dash-vehicle-empty">No personal vehicles</p>
+          ) : (
+            <ul className="dash-vehicle-grid">
+              {vehicles.map((v) => (
+                <li key={`${v.plate}-${v.model}`}>
+                  <div className="dash-vehicle-item">
+                    <span className="icon-box icon-box-md shrink-0">
+                      <Icon name="car" size="xs" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-heading truncate text-sm font-medium">
+                        {v.modelLabel || v.model}
+                      </p>
+                      <p className="text-caption font-mono text-xs">{v.plate}</p>
+                    </div>
+                    <span
+                      className={`shrink-0 text-[10px] font-semibold uppercase tracking-wide ${
+                        v.inGarage ? "text-mystic" : "text-amber-600"
+                      }`}
+                    >
+                      {v.inGarage ? "Garage" : "Out"}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ))}
       </div>
     </article>
-  );
-}
-
-function Stat({ label, value, sub, accent, compact, className = "" }) {
-  return (
-    <div
-      className={`rounded-xl border border-subtle surface-muted px-3 py-2.5 ${className}`}
-    >
-      <dt className="text-caption text-[10px] font-bold uppercase tracking-widest">
-        {label}
-      </dt>
-      <dd
-        className={`mt-0.5 font-semibold ${compact ? "text-xs" : "text-sm"} ${
-          accent ? "text-mystic" : "text-heading"
-        }`}
-      >
-        {value}
-      </dd>
-      {sub && <dd className="text-caption text-xs">{sub}</dd>}
-    </div>
   );
 }

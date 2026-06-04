@@ -26,8 +26,8 @@ Open [http://localhost:3000](http://localhost:3000).
 |-------|-------------|
 | `/` | Home + feature preview |
 | `/features` | Full server feature list |
-| `/whitelist` | Discord whitelist guide |
-| `/connect` | FiveM connection steps |
+| `/connect` | Whitelist + FiveM setup (get started) |
+| `/whitelist` | Redirects to `/connect#whitelist` |
 | `/dashboard` | Discord login + character info |
 
 See [DEPLOYMENT.md](./DEPLOYMENT.md) for Vercel and production setup.

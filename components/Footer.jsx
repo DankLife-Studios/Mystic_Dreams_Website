@@ -6,48 +6,46 @@ import { SITE } from "@/lib/site";
 const LINKS = [
   { href: "/", label: "Home" },
   { href: "/features", label: "Features" },
-  { href: "/whitelist", label: "Whitelist" },
-  { href: "/connect", label: "Connect" },
+  { href: "/connect", label: "Get Started" },
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/city", label: "City Info" },
+  { href: "/city", label: "City" },
 ];
 
 export default function Footer() {
   return (
-    <footer className="relative mt-auto border-t border-[var(--border)] bg-[var(--bg-secondary)]">
-      <div className="section-divider" />
-      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <div className="grid gap-10 md:grid-cols-3">
-          <div className="flex flex-col items-center text-center md:items-start md:text-left">
+    <footer className="mt-auto border-t border-[var(--border)]">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+        <div className="grid gap-10 sm:grid-cols-3">
+          <div>
             <Link href="/" className="flex items-center gap-3">
               <Image
                 src={SITE.logoUrl}
                 alt={SITE.name}
-                width={48}
-                height={48}
-                className="rounded-xl ring-1 ring-[var(--border)]"
+                width={36}
+                height={36}
+                className="rounded-md"
               />
               <div>
-                <p className="font-display font-bold">{SITE.name}</p>
-                <p className="text-sm text-[var(--accent)]">{SITE.tagline}</p>
+                <p className="font-display text-sm font-semibold">{SITE.name}</p>
+                <p className="text-caption text-xs">{SITE.tagline}</p>
               </div>
             </Link>
-            <p className="mt-4 text-sm text-[var(--text-muted)]">
+            <p className="text-body mt-4 max-w-xs text-sm">
               A premium FiveM roleplay experience built for immersion and
               community.
             </p>
           </div>
 
-          <div className="text-center md:text-left">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+          <div>
+            <p className="text-caption text-xs font-medium uppercase tracking-wider">
               Navigate
             </p>
-            <ul className="mt-4 space-y-2">
+            <ul className="mt-3 space-y-2">
               {LINKS.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]"
+                    className="text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]"
                   >
                     {link.label}
                   </Link>
@@ -56,20 +54,19 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div className="flex flex-col items-center text-center md:items-end md:text-right">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+          <div>
+            <p className="text-caption text-xs font-medium uppercase tracking-wider">
               Community
             </p>
-            <p className="mt-4 text-sm text-[var(--text-secondary)]">
-              Join Discord for whitelist, updates, and support.
+            <p className="text-body mt-3 text-sm">
+              Discord for whitelist, updates, and support.
             </p>
             <DiscordButton className="mt-4" variant="secondary" />
           </div>
         </div>
 
-        <div className="section-divider mt-10" />
-        <p className="mt-6 text-center text-xs text-[var(--text-muted)]">
-          © {new Date().getFullYear()} {SITE.name}. All rights reserved.
+        <p className="text-caption mt-10 border-t border-[var(--divider)] pt-6 text-center text-xs">
+          © {new Date().getFullYear()} {SITE.name}
         </p>
       </div>
     </footer>

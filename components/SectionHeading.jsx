@@ -9,16 +9,14 @@ export default function SectionHeading({
     align === "center" ? "text-center mx-auto" : "text-left";
 
   return (
-    <div className={`max-w-3xl ${alignClass}`}>
-      {eyebrow && (
-        <p className="badge-pill mb-4 inline-flex">{eyebrow}</p>
-      )}
-      <h2 className="text-heading font-display text-3xl font-bold tracking-tight sm:text-4xl">
+    <div className={`max-w-2xl ${alignClass}`}>
+      {eyebrow && <p className="eyebrow mb-3">{eyebrow}</p>}
+      <h2 className="text-heading font-display text-2xl font-semibold tracking-tight sm:text-3xl">
         {title}{" "}
         {highlight && <span className="text-gradient">{highlight}</span>}
       </h2>
       {description && (
-        <p className="text-body mt-4 text-lg leading-relaxed">
+        <p className="text-body mt-3 text-base leading-relaxed">
           {description}
         </p>
       )}

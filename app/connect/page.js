@@ -1,66 +1,86 @@
+import WhitelistSteps from "@/components/WhitelistSteps";
 import ConnectSteps from "@/components/ConnectSteps";
-import PageHero from "@/components/PageHero";
+import PageHeader from "@/components/PageHeader";
 import PageShell from "@/components/PageShell";
 import CTASection from "@/components/CTASection";
+import InfoNote from "@/components/InfoNote";
 import DiscordButton from "@/components/DiscordButton";
-import Icon from "@/components/Icon";
 import Link from "next/link";
-import { CONNECT_STEPS, SITE } from "@/lib/site";
+import {
+  CONNECT_STEPS,
+  SITE,
+  WHITELIST_STEPS,
+} from "@/lib/site";
 
 export const metadata = {
-  title: "Connect",
+  title: "Get Started",
+  description: `Whitelist and connect to ${SITE.name} on FiveM.`,
 };
 
-export default function ConnectPage() {
+export default function GetStartedPage() {
+  const totalSteps = WHITELIST_STEPS.length + CONNECT_STEPS.length;
+
   return (
-    <PageShell>
-      <PageHero
-        badge="Get In-Game"
-        badgeIcon="gamepad"
-        title="Connect to"
-        highlight={SITE.name}
-        description="Four steps from install to standing on the streets of Los Santos."
+    <PageShell narrow>
+      <PageHeader
+        eyebrow="Join the city"
+        eyebrowIcon="key"
+        title="Get"
+        highlight="started"
+        description={`${SITE.name} is Discord-whitelisted. Complete ${totalSteps} steps below — whitelist on Discord, then connect in FiveM.`}
       >
-        <Link
-          href="/whitelist"
-          className="inline-flex rounded-xl border border-mystic/25 px-4 py-2.5 text-sm font-semibold text-mystic transition hover:bg-mystic/10"
-        >
-          Whitelist First
-        </Link>
-        <Link
-          href="/dashboard"
-          className="inline-flex rounded-xl bg-linear-to-r from-mystic to-mystic-dark px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-mystic/25 transition hover:brightness-110"
-        >
+        <DiscordButton />
+        <Link href="/dashboard" className="btn-secondary">
           Dashboard
         </Link>
-      </PageHero>
+      </PageHeader>
 
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <h2 className="text-heading font-display flex items-center gap-2 text-lg font-bold">
-          <Icon name="route" size="sm" />
-          Setup steps
-        </h2>
-        <span className="rounded-full bg-mystic/15 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-mystic">
-          {CONNECT_STEPS.length}
-        </span>
-      </div>
+      <section id="whitelist" className="scroll-mt-24">
+        <div className="mb-4">
+          <p className="eyebrow">Step 1 · Discord</p>
+          <h2 className="text-heading font-display mt-1 text-xl font-semibold">
+            Whitelist
+          </h2>
+          <p className="text-body mt-1 text-sm">
+            Join Discord and earn the Citizen role before you can connect in-game.
+          </p>
+        </div>
+        <WhitelistSteps />
+      </section>
 
-      <ConnectSteps />
+      <InfoNote title="Important" className="mt-6">
+        Whitelist applications are reviewed in Discord. Our connection queue
+        verifies your Discord membership and <strong>Citizen</strong> role before
+        you join the server.
+      </InfoNote>
 
-      <div className="surface-card mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl px-5 py-4">
-        <p className="text-body flex items-center gap-2 text-sm">
-          <Icon name="circle-info" size="sm" />
+      <section id="fivem" className="mt-10 scroll-mt-24">
+        <div className="mb-4">
+          <p className="eyebrow">Step 2 · FiveM</p>
+          <h2 className="text-heading font-display mt-1 text-xl font-semibold">
+            Connect in-game
+          </h2>
+          <p className="text-body mt-1 text-sm">
+            Install FiveM, keep Discord running, and join the server.
+          </p>
+        </div>
+        <ConnectSteps />
+      </section>
+
+      <div className="surface-card mt-6 flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <p className="text-body text-sm">
           Need help? Our team is active on Discord.
         </p>
-        <DiscordButton className="!px-4 !py-2 !text-sm" />
+        <DiscordButton />
       </div>
 
-      <div className="mt-8">
+      <div className="mt-10">
         <CTASection
-          title="Already whitelisted?"
-          description="Log in to view characters and whitelist status."
+          contained
+          title="You're ready for Los Santos"
+          description="Log in to track whitelist status, characters, and vehicles."
           primaryHref="/dashboard"
-          primaryLabel="Open Dashboard"
+          primaryLabel="Open dashboard"
           showDiscord={false}
         />
       </div>

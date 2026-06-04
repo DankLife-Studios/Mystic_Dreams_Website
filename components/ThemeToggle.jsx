@@ -10,10 +10,10 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      className="btn-secondary !px-3 !py-2 text-sm"
+      className="nav-pill nav-pill-idle !px-2.5"
       aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
     >
-      <Icon name={theme === "dark" ? "sun" : "moon"} size="sm" className="icon-fancy" />
+      <Icon name={theme === "dark" ? "sun" : "moon"} size="sm" />
     </button>
   );
 }
