@@ -10,13 +10,10 @@ export default function CharactersSection({ characters }) {
 
   if (!characters?.length) return null;
 
-  const totalVehicles = characters.reduce(
-    (n, c) => n + (c.vehicles?.length || 0),
-    0
-  );
-
   const active =
     characters.find((c) => c.citizenid === activeCid) ?? characters[0];
+
+  const vehicleCount = (active.vehicles || []).length;
 
   return (
     <section aria-labelledby="characters-heading">
@@ -34,7 +31,7 @@ export default function CharactersSection({ characters }) {
             Vehicles
           </p>
           <p className="text-heading font-display mt-1 text-2xl font-semibold tabular-nums">
-            {totalVehicles}
+            {vehicleCount}
           </p>
         </div>
         <div className="dashboard-overview-cell">

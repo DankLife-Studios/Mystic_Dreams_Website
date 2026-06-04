@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import Icon from "./Icon";
+import GarageSection from "./GarageSection";
 import { formatPhone } from "@/lib/format";
 
 export default function CharacterCard({ character }) {
-  const [garageOpen, setGarageOpen] = useState(true);
   const vehicles = character.vehicles || [];
 
   const formatMoney = (n) =>
@@ -92,57 +90,7 @@ export default function CharacterCard({ character }) {
         </div>
       </dl>
 
-      <div className="dash-char-garage">
-        <div className="dash-char-garage-head">
-          <button
-            type="button"
-            onClick={() => setGarageOpen((o) => !o)}
-            className="text-heading flex items-center gap-2 text-sm font-semibold"
-            aria-expanded={garageOpen}
-          >
-            <Icon name="car" size="xs" />
-            Garage
-            <span className="text-caption font-normal tabular-nums">
-              {vehicles.length}
-            </span>
-            <Icon
-              name="arrow-down"
-              size="xs"
-              className={`text-caption transition-transform ${garageOpen ? "rotate-180" : ""}`}
-            />
-          </button>
-        </div>
-
-        {garageOpen &&
-          (vehicles.length === 0 ? (
-            <p className="dash-vehicle-empty">No personal vehicles</p>
-          ) : (
-            <ul className="dash-vehicle-grid">
-              {vehicles.map((v) => (
-                <li key={`${v.plate}-${v.model}`}>
-                  <div className="dash-vehicle-item">
-                    <span className="icon-box icon-box-md shrink-0">
-                      <Icon name="car" size="xs" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-heading truncate text-sm font-medium">
-                        {v.modelLabel || v.model}
-                      </p>
-                      <p className="text-caption font-mono text-xs">{v.plate}</p>
-                    </div>
-                    <span
-                      className={`shrink-0 text-[10px] font-semibold uppercase tracking-wide ${
-                        v.inGarage ? "text-mystic" : "text-amber-600"
-                      }`}
-                    >
-                      {v.inGarage ? "Garage" : "Out"}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ))}
-      </div>
+      <GarageSection vehicles={vehicles} />
     </article>
   );
 }
