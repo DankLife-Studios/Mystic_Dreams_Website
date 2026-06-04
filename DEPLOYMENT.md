@@ -20,6 +20,7 @@ GRANT SELECT ON mystic_dreams.users TO 'mystic_web_readonly'@'%';
 GRANT SELECT ON mystic_dreams.players TO 'mystic_web_readonly'@'%';
 GRANT SELECT ON mystic_dreams.player_groups TO 'mystic_web_readonly'@'%';
 GRANT SELECT ON mystic_dreams.bans TO 'mystic_web_readonly'@'%';
+GRANT SELECT ON mystic_dreams.player_vehicles TO 'mystic_web_readonly'@'%';
 FLUSH PRIVILEGES;
 ```
 
@@ -41,7 +42,16 @@ Set `DATABASE_URL=mysql://mystic_web_readonly:PASSWORD@HOST/mystic_dreams`
 - Uncomment Mystic_Queue website button with your Vercel URL.
 - Fix `qbx:discordLink` in `server.cfg` to `discord.gg/wtJNvB3bSK`.
 
-## 5. Verify
+## 5. Vehicle display names (optional)
+
+Dashboard vehicle titles use Qbox `vehicles.lua` labels. After adding custom cars on the server, regenerate and commit:
+
+```bash
+npm run generate:vehicles
+# or: node scripts/generate-vehicle-labels.mjs "F:/path/to/qbx_core/shared/vehicles.lua"
+```
+
+## 6. Verify
 
 - [ ] Public pages load (Home, Features, Whitelist, Connect)
 - [ ] Light/dark theme persists

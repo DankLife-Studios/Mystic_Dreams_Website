@@ -1,6 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import Icon from "./Icon";
 
 export default function CharacterCard({ character }) {
+  const [vehiclesOpen, setVehiclesOpen] = useState(false);
+  const vehicles = character.vehicles || [];
   const formatMoney = (n) =>
     new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -55,6 +60,67 @@ export default function CharacterCard({ character }) {
             compact
           />
         </dl>
+
+        <div className="mt-6 border-t border-subtle pt-5">
+          <button
+            type="button"
+            onClick={() => setVehiclesOpen((o) => !o)}
+            className="flex w-full items-center justify-between gap-2 text-left"
+            aria-expanded={vehiclesOpen}
+          >
+            <span className="text-caption flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
+              <Icon name="car" size="xs" />
+              Vehicles
+              <span className="rounded-full bg-mystic/15 px-2 py-0.5 tabular-nums text-mystic">
+                {vehicles.length}
+              </span>
+            </span>
+            <Icon
+              name="arrow-down"
+              size="xs"
+              className={`shrink-0 transition-transform ${vehiclesOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          {vehiclesOpen && (
+            <div className="mt-3 space-y-2">
+              {vehicles.length === 0 ? (
+                <p className="text-body text-sm italic text-[var(--text-muted)]">
+                  No owned vehicles
+                </p>
+              ) : (
+                vehicles.map((v) => (
+                  <div
+                    key={`${v.plate}-${v.model}`}
+                    className="rounded-xl border border-subtle surface-muted px-3 py-2.5"
+                  >
+                    <p className="text-heading text-sm font-semibold">
+                      {v.modelLabel || v.model}
+                    </p>
+                    <dl className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                      <div>
+                        <dt className="text-caption text-[10px] uppercase tracking-wider">
+                          Plate
+                        </dt>
+                        <dd className="text-heading font-mono font-medium">
+                          {v.plate}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-caption text-[10px] uppercase tracking-wider">
+                          Status
+                        </dt>
+                        <dd className="text-heading font-medium">
+                          {v.inGarage ? `Garage · ${v.garage}` : "Out"}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </article>
   );

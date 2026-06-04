@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/whitelist", label: "Whitelist" },
   { href: "/connect", label: "Connect" },
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/city", label: "City Info" },
 ];
 
 export default function Footer() {

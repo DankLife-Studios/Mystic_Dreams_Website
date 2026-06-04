@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "generate:vehicles": "node scripts/generate-vehicle-labels.mjs"
   },
   "dependencies": {
     "mysql2": "^3.14.0",

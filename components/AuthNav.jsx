@@ -17,6 +17,9 @@ export default function AuthNav() {
   if (session) {
     return (
       <div className="flex items-center gap-2">
+        <Link href="/city" className="btn-secondary !px-3 !py-2 text-sm">
+          City
+        </Link>
         <Link href="/dashboard" className="btn-secondary !px-3 !py-2 text-sm">
           Dashboard
         </Link>

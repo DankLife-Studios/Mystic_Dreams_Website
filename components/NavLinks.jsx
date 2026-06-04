@@ -2,22 +2,29 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Icon from "./Icon";
 
-const NAV = [
+const NAV_PUBLIC = [
   { href: "/", label: "Home", icon: "house" },
   { href: "/features", label: "Features", icon: "sparkles" },
   { href: "/whitelist", label: "Whitelist", icon: "key" },
   { href: "/connect", label: "Connect", icon: "gamepad" },
+];
+
+const NAV_AUTH = [
   { href: "/dashboard", label: "Dashboard", icon: "gauge" },
+  { href: "/city", label: "City", icon: "city" },
 ];
 
 export default function NavLinks() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const nav = session ? [...NAV_PUBLIC, ...NAV_AUTH] : NAV_PUBLIC;
 
   return (
     <nav className="hidden items-center gap-1 md:flex">
-      {NAV.map((item) => {
+      {nav.map((item) => {
         const active =
           item.href === "/"
             ? pathname === "/"
