@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 
 export default function WikiIndexClient() {
     const { status } = useSession();
@@ -13,6 +16,7 @@ export default function WikiIndexClient() {
     const [canCreate, setCanCreate] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [homePage, setHomePage] = useState(null);
 
     // Category management state
     const [newCategoryName, setNewCategoryName] = useState("");
@@ -35,6 +39,7 @@ export default function WikiIndexClient() {
                 setPages(data.pages || []);
                 setCategories(data.categories || []);
                 setCanCreate(!!data.canCreate);
+                setHomePage(data.homePage || null);
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -202,10 +207,36 @@ export default function WikiIndexClient() {
                 </div>
             </aside>
 
-            <main className="space-y-8">
-                <div className="space-y-4 border-b border-slate-800 pb-8">
-                    <h1 className="text-5xl font-serif font-bold tracking-tight text-white">Mystic Dreams Wiki</h1>
-                    <p className="text-lg text-slate-300">A community knowledge base for city guides, jobs, and server systems.</p>
+            <main className="space-y-10">
+                {/* Home Page Content */}
+                {homePage && (
+                    <div
+                        className="prose prose-invert max-w-none
+                        prose-headings:text-white prose-headings:font-serif prose-headings:tracking-tight
+                        prose-h1:text-4xl prose-h2:text-2xl prose-h2:mt-10 prose-h3:text-xl
+                        prose-a:text-violet-400 prose-a:no-underline hover:prose-a:underline
+                        prose-strong:text-white
+                        prose-code:before:content-none prose-code:after:content-none
+                        prose-pre:border prose-pre:border-slate-800 prose-pre:rounded-xl
+                        prose-img:rounded-xl prose-img:shadow-lg
+                        prose-hr:border-slate-800
+                        prose-blockquote:border-violet-500 prose-blockquote:not-italic
+                        prose-li:text-slate-200
+                    "
+                    >
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                            {homePage.content}
+                        </ReactMarkdown>
+                        {homePage.updated_at && (
+                            <p className="mt-6 text-sm text-slate-500">
+                                Last updated: {new Date(homePage.updated_at).toLocaleDateString()}
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {/* Divider + Stats bar */}
+                <div className="space-y-4 border-t border-slate-800 pt-8">
                     <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
                         <span>{totalPages} articles</span>
                         <span>·</span>

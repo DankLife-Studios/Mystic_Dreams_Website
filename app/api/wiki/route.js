@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { hasDiscordRole } from "@/lib/discord";
-import { createWikiPage, getWikiIndex, getWikiCategories, buildWikiSlug } from "@/lib/wiki";
+import { createWikiPage, getWikiIndex, getWikiCategories, getWikiPageBySlug, buildWikiSlug } from "@/lib/wiki";
 
 const WIKI_EDITOR_ROLE_ID = process.env.DISCORD_WIKI_EDITOR_ROLE_ID;
 
@@ -52,7 +52,10 @@ export async function GET() {
         // Sort: categories with display_order from standalone first, then alphabetical
         mergedCategories.sort((a, b) => a.name.localeCompare(b.name));
 
-        return Response.json({ pages, categories: mergedCategories, canCreate }, { headers });
+        // Fetch the home page for the main landing display
+        const homePage = await getWikiPageBySlug("home");
+
+        return Response.json({ pages, categories: mergedCategories, canCreate, homePage }, { headers });
     } catch (err) {
         console.error("Wiki index error:", err.message);
         return Response.json({ error: "Failed to load wiki index" }, { status: 500, headers });
