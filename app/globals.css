@@ -1233,12 +1233,19 @@ body {
     display: grid;
     gap: 2.5rem;
     align-items: center;
+    justify-items: center;
 }
 
 @media (min-width: 1024px) {
     .hero-grid {
-        grid-template-columns: 1fr auto;
+        grid-template-columns: 1fr 1fr;
         text-align: left;
+
+    }
+
+    .hero-grid> :last-child {
+        justify-self: normal;
+        align-self: center;
     }
 
     .hero-grid .hero-actions,

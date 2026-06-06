@@ -7,11 +7,11 @@ import { SITE, HERO_TAGS, STAT_ITEMS } from "@/lib/site";
 
 export default function Hero() {
     return (
-        <section className="hero-enhanced relative border-b border-[var(--border)]">
+        <section className="hero-enhanced relative">
             <MeshBackground variant="hero" />
-            <div className="relative z-10 px-4 py-12 sm:px-6 sm:py-16 lg:py-20" style={{ background: "var(--gradient-hero)" }}>
+            <div className="relative z-10 px-4 py-8 sm:px-6 sm:py-10 lg:py-12" style={{ background: "var(--gradient-hero)" }}>
                 {/* Badge */}
-                <div className="mb-6 flex justify-center lg:justify-start">
+                <div className="flex justify-center lg:justify-start">
                     <span className="badge-glow animate-fade-up">
                         <span className="relative flex h-2 w-2">
                             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -23,7 +23,7 @@ export default function Hero() {
 
                 <div className="hero-grid">
                     <div>
-                        <h1 className="animate-fade-up mt-3 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl" style={{ fontFamily: "var(--font-display)" }}>
+                        <h1 className="animate-fade-up mt-2 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl" style={{ fontFamily: "var(--font-display)" }}>
                             <span className="text-gradient">{SITE.name}</span>
                         </h1>
                         <p className="animate-fade-up animate-delay-2 mt-4 max-w-xl text-base leading-relaxed text-[var(--text-secondary)]">
@@ -49,7 +49,7 @@ export default function Hero() {
                         </ul>
                     </div>
 
-                    <div className="flex justify-center">
+                    <div>
                         <div className="relative">
                             <div className="absolute -inset-4 rounded-2xl bg-purple-500/10 blur-2xl" />
                             <Image
@@ -65,7 +65,7 @@ export default function Hero() {
                 </div>
 
                 {/* Stats bar */}
-                <div className="hero-stat-bar mt-10 max-w-3xl mx-auto">
+                <div className="hero-stat-bar mt-8 max-w-3xl mx-auto">
                     {STAT_ITEMS.map((stat, i) => (
                         <div key={stat.label} className="hero-stat-cell">
                             <p className="hero-stat-label">{stat.label}</p>
