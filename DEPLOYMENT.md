@@ -10,7 +10,7 @@
 4. **Bot** → Enable **Server Members Intent** → invite bot to your guild with `guilds.members.read`.
 5. Copy **Bot Token** to `DISCORD_BOT_TOKEN` (never commit).
 
-## 2. MySQL (read-only user)
+## 2. MySQL (read-only user — game server data)
 
 On your database host:
 
@@ -27,6 +27,28 @@ FLUSH PRIVILEGES;
 Set `DATABASE_URL=mysql://mystic_web_readonly:PASSWORD@HOST/mystic_dreams`
 
 **Firewall:** Vercel serverless uses dynamic IPs. Use [Vercel Static IPs](https://vercel.com/docs/connectivity/static-ips) (Pro) or allow the required egress range for your host.
+
+## 2b. Turso (libSQL — wiki & serverless data)
+
+The wiki uses Turso, a serverless SQLite-compatible database that works on Vercel's ephemeral filesystem.
+
+```bash
+# Install Turso CLI: https://docs.turso.tech/cli/installation
+turso auth signup
+turso db create database-mystic-website
+
+# Get the connection URL:
+turso db show database-mystic-website --url
+
+# Create an auth token for the website:
+turso db tokens create database-mystic-website
+```
+
+Set in Vercel environment variables:
+- `TURSO_DATABASE_URL=libsql://database-mystic-website-XXXX.turso.io`
+- `TURSO_AUTH_TOKEN=` (the token from above)
+
+The wiki schema auto-creates on first request — no manual migration needed.
 
 ## 3. Vercel
 

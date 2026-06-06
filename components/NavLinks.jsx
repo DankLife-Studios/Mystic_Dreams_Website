@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 const NAV_PUBLIC = [
   { href: "/", label: "Home" },
   { href: "/features", label: "Features" },
+  { href: "/wiki", label: "Wiki" },
   { href: "/connect", label: "Get Started" },
 ];
 

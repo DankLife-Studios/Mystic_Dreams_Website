@@ -1,60 +1,62 @@
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
+import Sidebar from "@/components/Sidebar";
 import Footer from "@/components/Footer";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SessionProvider from "@/components/SessionProvider";
 import { SITE } from "@/lib/site";
 
 const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
+    subsets: ["latin"],
+    variable: "--font-inter",
 });
 
 const outfit = Outfit({
-  subsets: ["latin"],
-  variable: "--font-outfit",
+    subsets: ["latin"],
+    variable: "--font-outfit",
 });
 
 export const metadata = {
-  title: {
-    default: SITE.name,
-    template: `%s | ${SITE.name}`,
-  },
-  description: SITE.description,
-  openGraph: {
-    title: SITE.name,
-    description: SITE.tagline,
-    images: [SITE.logoUrl],
-  },
+    title: {
+        default: SITE.name,
+        template: `%s | ${SITE.name}`,
+    },
+    description: SITE.description,
+    openGraph: {
+        title: SITE.name,
+        description: SITE.tagline,
+        images: [SITE.logoUrl],
+    },
 };
 
 export default function RootLayout({ children }) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://kit-pro.fontawesome.com/releases/v7.2.0/css/pro.min.css"
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('mystic-theme');if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);document.documentElement.classList.toggle('dark',t==='dark')}catch(e){}})();`,
-          }}
-        />
-      </head>
-      <body
-        className={`${inter.variable} ${outfit.variable} flex min-h-screen flex-col antialiased`}
-        style={{ "--font-display": "var(--font-outfit)" }}
-      >
-        <SessionProvider>
-          <ThemeProvider>
-            <Header />
-            <main className="page-shell flex-1">{children}</main>
-            <Footer />
-          </ThemeProvider>
-        </SessionProvider>
-      </body>
-    </html>
-  );
+    return (
+        <html lang="en" suppressHydrationWarning>
+            <head>
+                <link
+                    rel="stylesheet"
+                    href="https://kit-pro.fontawesome.com/releases/v7.2.0/css/pro.min.css"
+                />
+                <script
+                    dangerouslySetInnerHTML={{
+                        __html: `(function(){try{var t=localStorage.getItem('mystic-theme');if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);document.documentElement.classList.toggle('dark',t==='dark')}catch(e){}})();`,
+                    }}
+                />
+            </head>
+            <body
+                className={`${inter.variable} ${outfit.variable} flex min-h-screen flex-col antialiased`}
+                style={{ "--font-display": "var(--font-outfit)" }}
+            >
+                <SessionProvider>
+                    <ThemeProvider>
+                        <Sidebar />
+                        <div className="ml-[280px] mr-3 mt-3 flex min-h-screen flex-col">
+                            <main className="page-shell flex-1">{children}</main>
+                            <Footer />
+                        </div>
+                    </ThemeProvider>
+                </SessionProvider>
+            </body>
+        </html>
+    );
 }

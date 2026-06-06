@@ -7,6 +7,14 @@ import {
 import { fetchBusinessOwners } from "@/lib/qbox";
 import { rateLimit } from "@/lib/rate-limit";
 
+const CITY_CACHE_TTL = Number(process.env.CITY_CACHE_TTL_SECONDS || 30) * 1000;
+let cachedCityData = null;
+let cachedCityAt = 0;
+
+function isCityCacheFresh() {
+  return cachedCityData && Date.now() - cachedCityAt < CITY_CACHE_TTL;
+}
+
 export async function GET() {
   const session = await auth();
 
@@ -21,6 +29,14 @@ export async function GET() {
     return Response.json({ error: "Too many requests" }, { status: 429 });
   }
 
+  if (isCityCacheFresh()) {
+    return Response.json(cachedCityData, {
+      headers: {
+        "Cache-Control": `private, max-age=${Math.floor(CITY_CACHE_TTL / 1000)}, stale-while-revalidate=30`,
+      },
+    });
+  }
+
   const enabled = getEnabledBusinesses();
   const jobKeys = enabled.map((b) => b.jobKey);
 
@@ -30,6 +46,13 @@ export async function GET() {
       owners = await fetchBusinessOwners(jobKeys);
     } catch (err) {
       console.error("City directory DB error:", err.message);
+      if (cachedCityData) {
+        return Response.json(cachedCityData, {
+          headers: {
+            "Cache-Control": `private, max-age=${Math.floor(CITY_CACHE_TTL / 1000)}, stale-while-revalidate=30`,
+          },
+        });
+      }
       return Response.json(
         { error: "Database unavailable", dbError: true },
         { status: 503 }
@@ -63,12 +86,13 @@ export async function GET() {
     businesses: businesses.filter((b) => b.category === cat.id),
   })).filter((cat) => cat.businesses.length > 0);
 
-  return Response.json(
-    { categories, businesses },
-    {
-      headers: {
-        "Cache-Control": "private, no-store",
-      },
-    }
-  );
+  const responseData = { categories, businesses };
+  cachedCityData = responseData;
+  cachedCityAt = Date.now();
+
+  return Response.json(responseData, {
+    headers: {
+      "Cache-Control": `private, max-age=${Math.floor(CITY_CACHE_TTL / 1000)}, stale-while-revalidate=30`,
+    },
+  });
 }
