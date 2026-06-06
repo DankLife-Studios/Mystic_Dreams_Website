@@ -9,7 +9,7 @@ import { SITE } from "@/lib/site";
 
 const NAV_PUBLIC = [
     { href: "/", label: "Home", icon: "fa-house" },
-    { href: "/features", label: "Features", icon: "fa-sparkles" },
+    { href: "/features", label: "About Us", icon: "fa-sparkles" },
     { href: "/wiki", label: "Wiki", icon: "fa-books" },
     { href: "/connect", label: "Get Started", icon: "fa-rocket-launch" },
 ];
@@ -30,9 +30,9 @@ export default function Sidebar() {
     };
 
     return (
-        <aside className="fixed left-3 top-3 bottom-3 z-50 flex w-64 flex-col overflow-hidden rounded-2xl border border-purple-500/20 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 shadow-2xl shadow-purple-500/10">
+        <aside className="fixed left-3 top-3 bottom-3 z-50 flex w-64 flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-secondary)] shadow-2xl shadow-purple-500/10">
             {/* Server header */}
-            <div className="relative border-b border-purple-500/20 bg-slate-950/80 px-5 py-4">
+            <div className="relative border-b border-[var(--border)] bg-[var(--card-bg)] px-5 py-4">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent" />
                 <div className="relative flex items-center gap-3">
                     <div className="relative">
@@ -46,15 +46,15 @@ export default function Sidebar() {
                         />
                     </div>
                     <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-white">{SITE.name}</p>
-                        <p className="truncate text-[11px] text-purple-300/70">{SITE.tagline}</p>
+                        <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{SITE.name}</p>
+                        <p className="truncate text-[11px] text-[var(--text-muted)]">{SITE.tagline}</p>
                     </div>
                 </div>
             </div>
 
             {/* Nav channels */}
             <nav className="flex-1 overflow-y-auto px-3 py-4">
-                <p className="mb-3 flex items-center gap-2 px-3 text-[10px] font-bold uppercase tracking-[0.25em] text-purple-400/60">
+                <p className="mb-3 flex items-center gap-2 px-3 text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--text-muted)]">
                     <span className="block h-1 w-1 rounded-full bg-purple-500/50" />
                     Navigation
                 </p>
@@ -66,12 +66,12 @@ export default function Sidebar() {
                                 key={item.href}
                                 href={item.href}
                                 className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${active
-                                    ? "bg-purple-500/15 text-purple-200 shadow-inner shadow-purple-500/5"
-                                    : "text-slate-400 hover:bg-slate-800/80 hover:text-white"
+                                        ? "bg-purple-500/15 text-[var(--accent)]"
+                                        : "text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
                                     }`}
                             >
                                 <span
-                                    className={`text-sm transition-colors ${active ? "text-purple-400" : "text-slate-500 group-hover:text-purple-300"
+                                    className={`text-sm transition-colors ${active ? "text-[var(--accent)]" : "text-[var(--text-muted)] group-hover:text-[var(--accent)]"
                                         }`}
                                 >
                                     <i className={`fa-regular ${item.icon}`} />
@@ -87,14 +87,14 @@ export default function Sidebar() {
 
                 {session && (
                     <>
-                        <p className="mb-3 mt-8 flex items-center gap-2 px-3 text-[10px] font-bold uppercase tracking-[0.25em] text-purple-400/60">
+                        <p className="mb-3 mt-8 flex items-center gap-2 px-3 text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--text-muted)]">
                             <span className="block h-1 w-1 rounded-full bg-purple-500/50" />
                             Account
                         </p>
                         <div className="space-y-0.5">
                             <Link
                                 href="/dashboard"
-                                className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-slate-800/80"
+                                className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-[var(--surface-muted)]"
                             >
                                 {session.user?.image ? (
                                     <Image
@@ -105,20 +105,20 @@ export default function Sidebar() {
                                         className="h-7 w-7 rounded-full ring-1 ring-purple-500/30"
                                     />
                                 ) : (
-                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-purple-500/20 text-xs font-bold text-purple-300 ring-1 ring-purple-500/30">
+                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-purple-500/20 text-xs font-bold text-[var(--accent)] ring-1 ring-purple-500/30">
                                         {session.user?.name?.[0]?.toUpperCase() || "?"}
                                     </div>
                                 )}
                                 <div className="min-w-0">
-                                    <p className="truncate text-xs font-medium text-slate-200">{session.user?.name}</p>
-                                    <p className="truncate text-[10px] text-slate-500">View dashboard</p>
+                                    <p className="truncate text-xs font-medium text-[var(--text-primary)]">{session.user?.name}</p>
+                                    <p className="truncate text-[10px] text-[var(--text-muted)]">View dashboard</p>
                                 </div>
                                 <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
                             </Link>
                             <button
                                 type="button"
                                 onClick={() => signOut({ callbackUrl: "/" })}
-                                className="w-full rounded-xl px-3 py-2.5 text-left text-sm text-slate-500 transition-all duration-200 hover:bg-rose-500/10 hover:text-rose-300"
+                                className="w-full rounded-xl px-3 py-2.5 text-left text-sm text-[var(--text-muted)] transition-all duration-200 hover:bg-rose-500/10 hover:text-rose-300"
                             >
                                 <i className="fa-regular fa-right-from-bracket mr-2 text-xs" />
                                 Log out
@@ -129,7 +129,7 @@ export default function Sidebar() {
             </nav>
 
             {/* Bottom bar */}
-            <div className="border-t border-purple-500/20 bg-slate-950/50 px-4 py-3">
+            <div className="border-t border-[var(--border)] bg-[var(--surface-muted)] px-4 py-3">
                 <div className="flex items-center justify-between">
                     <ThemeToggle />
                     {!session && status !== "loading" && (

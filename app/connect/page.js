@@ -92,11 +92,12 @@ export default function GetStartedPage() {
                 {/* Sticky sidebar info */}
                 <aside className="hidden lg:block">
                     <div className="sticky top-[5.5rem] space-y-4">
-                        <div className="rounded-2xl border border-purple-500/20 bg-gradient-to-b from-slate-950 to-slate-900 p-6 shadow-lg shadow-purple-500/5">
-                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-400">
+                        <div className="card-layered p-6 border-purple-500/20">
+                            <div className="absolute top-0 right-0 h-24 w-24 rounded-bl-3xl bg-gradient-to-bl from-purple-500/8 to-transparent" />
+                            <p className="relative text-xs font-semibold uppercase tracking-[0.2em] text-purple-400">
                                 Quick info
                             </p>
-                            <div className="mt-4 space-y-3">
+                            <div className="relative mt-4 space-y-3">
                                 {QUICK_INFO.map((item) => (
                                     <div key={item.label} className="flex items-center gap-3">
                                         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400">
@@ -111,7 +112,7 @@ export default function GetStartedPage() {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-purple-500/20 bg-slate-950 p-6">
+                        <div className="card-layered p-6 border-purple-500/20">
                             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-400">
                                 Need help?
                             </p>

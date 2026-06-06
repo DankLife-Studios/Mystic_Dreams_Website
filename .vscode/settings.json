@@ -31,7 +31,7 @@
         "editor.insertSpaces": true
     },
     "[css]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.defaultFormatter": "vscode.css-language-features",
         "editor.tabSize": 4,
         "editor.insertSpaces": true
     },
