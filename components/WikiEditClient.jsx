@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import WikiMarkdownEditor from "./WikiMarkdownEditor";
 
 export default function WikiEditClient({ slug }) {
     const router = useRouter();
@@ -18,6 +19,7 @@ export default function WikiEditClient({ slug }) {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [error, setError] = useState(null);
     const [message, setMessage] = useState(null);
+    const [categories, setCategories] = useState([]);
 
     useEffect(() => {
         async function load() {
@@ -25,13 +27,17 @@ export default function WikiEditClient({ slug }) {
             setError(null);
 
             try {
-                const res = await fetch(`/api/wiki/${slug}`);
-                if (!res.ok) {
-                    const body = await res.json().catch(() => ({}));
+                const [pageRes, indexRes] = await Promise.all([
+                    fetch(`/api/wiki/${slug}`),
+                    fetch("/api/wiki"),
+                ]);
+
+                if (!pageRes.ok) {
+                    const body = await pageRes.json().catch(() => ({}));
                     throw new Error(body.error || "Failed to load page");
                 }
 
-                const data = await res.json();
+                const data = await pageRes.json();
                 if (data.page) {
                     setPage(data.page);
                     setTitle(data.page.title);
@@ -39,6 +45,11 @@ export default function WikiEditClient({ slug }) {
                     setContent(data.page.content);
                 } else {
                     throw new Error("Page not found");
+                }
+
+                if (indexRes.ok) {
+                    const indexData = await indexRes.json();
+                    setCategories(indexData.categories || []);
                 }
             } catch (err) {
                 setError(err.message);
@@ -121,7 +132,7 @@ export default function WikiEditClient({ slug }) {
     }
 
     return (
-        <div className="max-w-3xl mx-auto space-y-8">
+        <div className="max-w-5xl mx-auto space-y-8">
             <div className="space-y-4 border-b border-slate-800 pb-8">
                 <h1 className="text-5xl font-serif font-bold tracking-tight text-white">Edit {page.title}</h1>
                 <p className="text-slate-400 text-sm">
@@ -139,7 +150,7 @@ export default function WikiEditClient({ slug }) {
                         value={title}
                         onChange={(event) => setTitle(event.target.value)}
                         required
-                        className="w-full bg-slate-900 border border-slate-800 rounded px-4 py-3 text-white outline-none focus:border-violet-500 transition"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-white outline-none focus:border-violet-500 transition"
                     />
                 </div>
 
@@ -148,19 +159,19 @@ export default function WikiEditClient({ slug }) {
                     <input
                         value={category}
                         onChange={(event) => setCategory(event.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded px-4 py-3 text-white outline-none focus:border-violet-500 transition"
+                        list="wiki-categories-edit"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-white outline-none focus:border-violet-500 transition"
                     />
+                    <datalist id="wiki-categories-edit">
+                        {categories.map((cat) => (
+                            <option key={cat.name} value={cat.name} />
+                        ))}
+                    </datalist>
                 </div>
 
                 <div>
                     <label className="block text-sm font-semibold text-white mb-2">Content</label>
-                    <textarea
-                        value={content}
-                        onChange={(event) => setContent(event.target.value)}
-                        required
-                        rows={14}
-                        className="w-full bg-slate-900 border border-slate-800 rounded px-4 py-3 text-white outline-none focus:border-violet-500 transition font-mono text-sm"
-                    />
+                    <WikiMarkdownEditor value={content} onChange={setContent} />
                 </div>
 
                 <div className="flex flex-col gap-4">
@@ -169,7 +180,7 @@ export default function WikiEditClient({ slug }) {
                         <button
                             type="submit"
                             disabled={saving}
-                            className="ml-auto px-4 py-2 text-sm font-medium text-white bg-violet-500 rounded hover:bg-violet-400 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="ml-auto px-5 py-2.5 text-sm font-medium text-white bg-violet-500 rounded-lg hover:bg-violet-400 transition disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             {saving ? "Saving..." : "Save changes"}
                         </button>
@@ -180,25 +191,25 @@ export default function WikiEditClient({ slug }) {
                             <button
                                 type="button"
                                 onClick={() => setShowDeleteConfirm(true)}
-                                className="px-4 py-2 text-sm font-medium text-rose-400 border border-rose-700 rounded hover:bg-rose-950/30 transition"
+                                className="px-4 py-2 text-sm font-medium text-rose-400 border border-rose-700 rounded-lg hover:bg-rose-950/30 transition"
                             >
                                 Delete this page
                             </button>
                         ) : (
-                            <div className="flex items-center gap-3 rounded border border-rose-700 bg-rose-950/20 px-4 py-3">
+                            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-rose-700 bg-rose-950/20 px-4 py-3">
                                 <p className="text-sm text-rose-200">Permanently delete &quot;{page.title}&quot;? This cannot be undone.</p>
                                 <button
                                     type="button"
                                     onClick={handleDelete}
                                     disabled={deleting}
-                                    className="px-3 py-1.5 text-sm font-medium text-white bg-rose-600 rounded hover:bg-rose-500 transition disabled:opacity-60"
+                                    className="px-3 py-1.5 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-500 transition disabled:opacity-60"
                                 >
                                     {deleting ? "Deleting..." : "Confirm delete"}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setShowDeleteConfirm(false)}
-                                    className="px-3 py-1.5 text-sm font-medium text-slate-300 border border-slate-600 rounded hover:bg-slate-800 transition"
+                                    className="px-3 py-1.5 text-sm font-medium text-slate-300 border border-slate-600 rounded-lg hover:bg-slate-800 transition"
                                 >
                                     Cancel
                                 </button>

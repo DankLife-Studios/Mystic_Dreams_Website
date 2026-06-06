@@ -14,6 +14,11 @@ export default function WikiIndexClient() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // Category management state
+    const [newCategoryName, setNewCategoryName] = useState("");
+    const [addingCategory, setAddingCategory] = useState(false);
+    const [categoryMsg, setCategoryMsg] = useState(null);
+
     useEffect(() => {
         async function load() {
             setLoading(true);
@@ -39,6 +44,68 @@ export default function WikiIndexClient() {
 
         load();
     }, [status]);
+
+    async function handleAddCategory(event) {
+        event.preventDefault();
+        const name = newCategoryName.trim();
+        if (!name) return;
+
+        setAddingCategory(true);
+        setCategoryMsg(null);
+
+        try {
+            const res = await fetch("/api/wiki/categories", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, description: "" }),
+            });
+
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                throw new Error(body.error || "Failed to add category");
+            }
+
+            const data = await res.json();
+            setNewCategoryName("");
+
+            // Optimistically add to the list
+            setCategories((prev) => {
+                const exists = prev.some((c) => c.name === data.category.name);
+                if (exists) return prev;
+                return [
+                    ...prev,
+                    { name: data.category.name, description: "", pages: [] },
+                ].sort((a, b) => a.name.localeCompare(b.name));
+            });
+        } catch (err) {
+            setCategoryMsg(err.message);
+        } finally {
+            setAddingCategory(false);
+        }
+    }
+
+    async function handleDeleteCategory(name) {
+        if (!confirm(`Delete the "${name}" category? Pages in this category will NOT be deleted.`)) return;
+
+        setCategoryMsg(null);
+
+        try {
+            const res = await fetch(`/api/wiki/categories?name=${encodeURIComponent(name)}`, {
+                method: "DELETE",
+            });
+
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                throw new Error(body.error || "Failed to delete category");
+            }
+
+            // Remove from the local list
+            setCategories((prev) => prev.filter((c) => c.name !== name));
+            if (activeCategory === name) setActiveCategory("all");
+        } catch (err) {
+            setCategoryMsg(err.message);
+        }
+    }
 
     const filteredCategories = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
@@ -75,35 +142,61 @@ export default function WikiIndexClient() {
                             type="button"
                             onClick={() => setActiveCategory("all")}
                             className={`block w-full px-3 py-2 text-left text-sm transition border-l-2 ${activeCategory === "all"
-                                    ? "font-semibold text-white border-violet-500"
-                                    : "text-slate-400 hover:text-slate-200 border-transparent"
+                                ? "font-semibold text-white border-violet-500"
+                                : "text-slate-400 hover:text-slate-200 border-transparent"
                                 }`}
                         >
                             All pages ({totalPages})
                         </button>
                         {categories.map((category) => (
-                            <button
-                                key={category.name}
-                                type="button"
-                                onClick={() => setActiveCategory(category.name)}
-                                className={`block w-full px-3 py-2 text-left text-sm transition border-l-2 ${activeCategory === category.name
+                            <div key={category.name} className="group flex items-center">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveCategory(category.name)}
+                                    className={`block flex-1 px-3 py-2 text-left text-sm transition border-l-2 ${activeCategory === category.name
                                         ? "font-semibold text-white border-violet-500"
                                         : "text-slate-400 hover:text-slate-200 border-transparent"
-                                    }`}
-                            >
-                                {category.name} ({category.pages.length})
-                            </button>
+                                        }`}
+                                >
+                                    {category.name} ({category.pages.length})
+                                </button>
+                                {canCreate && (
+                                    <button
+                                        type="button"
+                                        title={`Delete "${category.name}" category`}
+                                        onClick={() => handleDeleteCategory(category.name)}
+                                        className="mr-1 flex h-6 w-6 items-center justify-center rounded text-slate-600 opacity-0 group-hover:opacity-100 hover:bg-slate-800 hover:text-rose-400 transition-all text-xs"
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </div>
                         ))}
                     </nav>
 
                     {canCreate && (
-                        <div className="border-t border-slate-800 pt-4">
-                            <Link
-                                href="/wiki/new"
-                                className="block rounded-lg bg-violet-500 px-3 py-2 text-center text-sm font-medium text-white transition hover:bg-violet-400"
-                            >
-                                Create page
-                            </Link>
+                        <div className="border-t border-slate-800 pt-4 space-y-3">
+                            <form onSubmit={handleAddCategory} className="space-y-2">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Add Category</p>
+                                <div className="flex gap-1">
+                                    <input
+                                        value={newCategoryName}
+                                        onChange={(e) => setNewCategoryName(e.target.value)}
+                                        placeholder="Category name…"
+                                        className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500 transition placeholder-slate-500"
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={addingCategory || !newCategoryName.trim()}
+                                        className="px-2 py-1.5 text-xs font-medium bg-violet-500 text-white rounded hover:bg-violet-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {addingCategory ? "…" : "Add"}
+                                    </button>
+                                </div>
+                            </form>
+                            {categoryMsg && (
+                                <p className="text-xs text-rose-400">{categoryMsg}</p>
+                            )}
                         </div>
                     )}
                 </div>

@@ -1,9 +1,8 @@
 import { auth } from "@/lib/auth";
 import { hasDiscordRole } from "@/lib/discord";
-import { createWikiPage, getWikiIndex, buildWikiSlug } from "@/lib/wiki";
+import { createWikiPage, getWikiIndex, getWikiCategories, buildWikiSlug } from "@/lib/wiki";
 
 const WIKI_EDITOR_ROLE_ID = process.env.DISCORD_WIKI_EDITOR_ROLE_ID;
-const CACHE_SECONDS = 30;
 
 const headers = {
     "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -17,18 +16,43 @@ export async function GET() {
 
     try {
         const pages = await getWikiIndex();
-        const categories = Array.from(
-            pages.reduce((map, page) => {
-                const category = page.category || "Uncategorized";
-                const list = map.get(category) || [];
-                list.push(page);
-                map.set(category, list);
-                return map;
-            }, new Map()),
-            ([name, pages]) => ({ name, pages })
-        );
 
-        return Response.json({ pages, categories, canCreate }, { headers });
+        // Build categories from page data (backwards compatible)
+        const pageCategoryMap = pages.reduce((map, page) => {
+            const category = page.category || "Uncategorized";
+            const list = map.get(category) || [];
+            list.push(page);
+            map.set(category, list);
+            return map;
+        }, new Map());
+
+        // Load standalone categories from the dedicated table
+        const standaloneCategories = await getWikiCategories();
+
+        // Merge: standalone categories that don't yet have pages still appear (empty)
+        const mergedCategories = [];
+        const seen = new Set();
+
+        for (const cat of standaloneCategories) {
+            seen.add(cat.name);
+            mergedCategories.push({
+                name: cat.name,
+                description: cat.description || "",
+                pages: pageCategoryMap.get(cat.name) || [],
+            });
+        }
+
+        // Add any page-derived categories not already in the standalone list
+        for (const [name, catPages] of pageCategoryMap) {
+            if (!seen.has(name)) {
+                mergedCategories.push({ name, description: "", pages: catPages });
+            }
+        }
+
+        // Sort: categories with display_order from standalone first, then alphabetical
+        mergedCategories.sort((a, b) => a.name.localeCompare(b.name));
+
+        return Response.json({ pages, categories: mergedCategories, canCreate }, { headers });
     } catch (err) {
         console.error("Wiki index error:", err.message);
         return Response.json({ error: "Failed to load wiki index" }, { status: 500, headers });

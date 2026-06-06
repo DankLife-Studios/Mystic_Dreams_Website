@@ -1,9 +1,10 @@
 import Link from "next/link";
 import PageShell from "@/components/PageShell";
-import { getWikiIndex, getWikiPageBySlug } from "@/lib/wiki";
+import { getWikiIndex, getWikiPageBySlug, getWikiCategories } from "@/lib/wiki";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 
 export const dynamic = "force-dynamic";
 
@@ -15,16 +16,30 @@ export default async function WikiSlugPage({ params }) {
     }
 
     const pages = await getWikiIndex();
-    const categories = Array.from(
-        pages.reduce((map, item) => {
-            const category = item.category || "Uncategorized";
-            const list = map.get(category) || [];
-            list.push(item);
-            map.set(category, list);
-            return map;
-        }, new Map()),
-        ([name, pages]) => ({ name, pages })
-    );
+    const standaloneCategories = await getWikiCategories();
+
+    // Merge standalone categories with page-derived ones
+    const pageCategoryMap = pages.reduce((map, item) => {
+        const category = item.category || "Uncategorized";
+        const list = map.get(category) || [];
+        list.push(item);
+        map.set(category, list);
+        return map;
+    }, new Map());
+
+    const seen = new Set();
+    const categories = [];
+
+    for (const cat of standaloneCategories) {
+        seen.add(cat.name);
+        categories.push({ name: cat.name, pages: pageCategoryMap.get(cat.name) || [] });
+    }
+    for (const [name, catPages] of pageCategoryMap) {
+        if (!seen.has(name)) {
+            categories.push({ name, pages: catPages });
+        }
+    }
+    categories.sort((a, b) => a.name.localeCompare(b.name));
 
     const relatedPages = pages
         .filter((item) => item.category === page.category && item.slug !== page.slug)
@@ -48,8 +63,8 @@ export default async function WikiSlugPage({ params }) {
                                     key={category.name}
                                     href="/wiki"
                                     className={`block px-3 py-2 text-sm transition border-l-2 ${category.name === page.category
-                                            ? "font-semibold text-white border-violet-500"
-                                            : "text-slate-400 hover:text-slate-200 border-transparent"
+                                        ? "font-semibold text-white border-violet-500"
+                                        : "text-slate-400 hover:text-slate-200 border-transparent"
                                         }`}
                                 >
                                     {category.name}
@@ -74,8 +89,19 @@ export default async function WikiSlugPage({ params }) {
                             </div>
                         </div>
 
-                        <div className="prose prose-invert max-w-none py-8 text-slate-200">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{page.content}</ReactMarkdown>
+                        <div className="prose prose-invert max-w-none py-8
+                            prose-headings:text-white prose-headings:font-serif prose-headings:tracking-tight
+                            prose-h1:text-4xl prose-h2:text-2xl prose-h2:mt-10 prose-h3:text-xl
+                            prose-a:text-violet-400 prose-a:no-underline hover:prose-a:underline
+                            prose-strong:text-white
+                            prose-code:before:content-none prose-code:after:content-none
+                            prose-pre:border prose-pre:border-slate-800 prose-pre:rounded-xl
+                            prose-img:rounded-xl prose-img:shadow-lg
+                            prose-hr:border-slate-800
+                            prose-blockquote:border-violet-500 prose-blockquote:not-italic
+                            prose-li:text-slate-200
+                        ">
+                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{page.content}</ReactMarkdown>
                         </div>
 
                         <div className="border-t border-slate-800 pt-6 flex flex-wrap items-center gap-3">
