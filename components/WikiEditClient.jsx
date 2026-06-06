@@ -20,6 +20,7 @@ export default function WikiEditClient({ slug }) {
     const [error, setError] = useState(null);
     const [message, setMessage] = useState(null);
     const [categories, setCategories] = useState([]);
+    const [isHomepage, setIsHomepage] = useState(false);
 
     useEffect(() => {
         async function load() {
@@ -43,6 +44,7 @@ export default function WikiEditClient({ slug }) {
                     setTitle(data.page.title);
                     setCategory(data.page.category || "General");
                     setContent(data.page.content);
+                    setIsHomepage(!!data.page.is_homepage);
                 } else {
                     throw new Error("Page not found");
                 }
@@ -70,7 +72,7 @@ export default function WikiEditClient({ slug }) {
             const res = await fetch(`/api/wiki/${slug}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title, category, content }),
+                body: JSON.stringify({ title, category, content, isHomepage }),
             });
 
             if (!res.ok) {
@@ -122,7 +124,7 @@ export default function WikiEditClient({ slug }) {
                     <button
                         type="button"
                         onClick={() => signIn("discord", { callbackUrl: `/wiki/${slug}/edit` })}
-                        className="mt-3 px-4 py-2 text-sm font-medium bg-violet-500 text-white rounded hover:bg-violet-400 transition"
+                        className="mt-3 px-4 py-2 text-sm font-medium border border-violet-500 text-violet-400 bg-transparent rounded hover:bg-violet-500/10 transition"
                     >
                         Sign in with Discord
                     </button>
@@ -169,6 +171,21 @@ export default function WikiEditClient({ slug }) {
                     </datalist>
                 </div>
 
+                <div className="flex items-center gap-3">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={isHomepage}
+                            onChange={(e) => setIsHomepage(e.target.checked)}
+                            className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none peer-focus:ring-1 peer-focus:ring-violet-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-500"></div>
+                        <span className="ml-3 text-sm font-medium text-slate-300">
+                            Set as wiki homepage
+                        </span>
+                    </label>
+                </div>
+
                 <div>
                     <label className="block text-sm font-semibold text-white mb-2">Content</label>
                     <WikiMarkdownEditor value={content} onChange={setContent} />
@@ -180,7 +197,7 @@ export default function WikiEditClient({ slug }) {
                         <button
                             type="submit"
                             disabled={saving}
-                            className="ml-auto px-5 py-2.5 text-sm font-medium text-white bg-violet-500 rounded-lg hover:bg-violet-400 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="ml-auto px-5 py-2.5 text-sm font-medium border border-violet-500 text-violet-400 bg-transparent rounded-lg hover:bg-violet-500/10 transition disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             {saving ? "Saving..." : "Save changes"}
                         </button>

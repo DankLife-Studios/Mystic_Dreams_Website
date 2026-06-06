@@ -156,12 +156,24 @@ body {
 }
 
 .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200;
-    background: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--accent);
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: transparent;
+    transition: color 0.2s, background-color 0.2s, border-color 0.2s;
 }
 
 .btn-primary:hover {
-    background: var(--accent-hover);
+    background: var(--accent-glow);
+    border-color: var(--accent-hover);
+    color: var(--accent-hover);
 }
 
 .btn-secondary {

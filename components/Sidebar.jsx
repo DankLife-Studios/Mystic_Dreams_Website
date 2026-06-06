@@ -162,7 +162,7 @@ export default function Sidebar({ isOpen = false, onClose = () => { } }) {
                         <button
                             type="button"
                             onClick={() => signIn("discord", { callbackUrl: "/dashboard" })}
-                            className="flex items-center gap-2 rounded-xl bg-purple-500 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-purple-500/20 transition-all duration-200 hover:bg-purple-400 hover:shadow-purple-400/30"
+                            className="flex items-center gap-2 rounded-xl border border-purple-500 text-purple-400 bg-transparent px-4 py-2 text-xs font-semibold transition-all duration-200 hover:bg-purple-500/10"
                         >
                             <i className="fa-brands fa-discord" />
                             Login

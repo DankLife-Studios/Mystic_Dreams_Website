@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { hasDiscordRole } from "@/lib/discord";
-import { getWikiPageBySlug, updateWikiPage, deleteWikiPage } from "@/lib/wiki";
+import { getWikiPageBySlug, updateWikiPage, deleteWikiPage, setWikiHomepage } from "@/lib/wiki";
 
 const WIKI_EDITOR_ROLE_ID = process.env.DISCORD_WIKI_EDITOR_ROLE_ID;
 const CACHE_SECONDS = 30;
@@ -40,13 +40,14 @@ export async function PUT(request, { params }) {
     const title = String(body.title || "").trim();
     const category = String(body.category || "General").trim();
     const content = String(body.content || "").trim();
+    const isHomepage = body.hasOwnProperty("isHomepage") ? Boolean(body.isHomepage) : undefined;
 
     if (!title || !content) {
         return Response.json({ error: "Title and content are required" }, { status: 400, headers });
     }
 
     try {
-        const page = await updateWikiPage({ slug, title, category, content });
+        const page = await updateWikiPage({ slug, title, category, content, isHomepage });
         return Response.json(page, { headers });
     } catch (err) {
         console.error("Wiki update error:", err.message);

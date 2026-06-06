@@ -5,6 +5,7 @@ import {
     createWikiCategory,
     updateWikiCategory,
     deleteWikiCategory,
+    reorderWikiCategories,
 } from "@/lib/wiki";
 
 const WIKI_EDITOR_ROLE_ID = process.env.DISCORD_WIKI_EDITOR_ROLE_ID;
@@ -43,13 +44,14 @@ export async function POST(request) {
     const body = await request.json();
     const name = String(body.name || "").trim();
     const description = String(body.description || "").trim();
+    const parentName = body.parentName ? String(body.parentName).trim() : null;
 
     if (!name) {
         return Response.json({ error: "Category name is required" }, { status: 400, headers });
     }
 
     try {
-        const category = await createWikiCategory({ name, description });
+        const category = await createWikiCategory({ name, description, parentName });
         return Response.json({ category }, { status: 201, headers });
     } catch (err) {
         console.error("Wiki category create error:", err.message);
@@ -82,6 +84,8 @@ export async function PUT(request) {
     try {
         const category = await updateWikiCategory(name, {
             description: body.description,
+            parentName: body.parentName,
+            displayOrder: body.displayOrder,
         });
         return Response.json({ category }, { headers });
     } catch (err) {
@@ -119,6 +123,37 @@ export async function DELETE(request) {
         console.error("Wiki category delete error:", err.message);
         return Response.json(
             { error: err.message || "Failed to delete category" },
+            { status: 500, headers }
+        );
+    }
+}
+
+/** PATCH — bulk reorder categories (editor role required). Body: { orders: [{ name, display_order }] } */
+export async function PATCH(request) {
+    const session = await auth();
+
+    if (!session?.user?.discordId) {
+        return Response.json({ error: "Unauthorized" }, { status: 401, headers });
+    }
+
+    if (!(await hasDiscordRole(session.user.discordId, WIKI_EDITOR_ROLE_ID))) {
+        return Response.json({ error: "Forbidden" }, { status: 403, headers });
+    }
+
+    const body = await request.json();
+    const orders = body.orders;
+
+    if (!Array.isArray(orders) || orders.length === 0) {
+        return Response.json({ error: "orders array is required" }, { status: 400, headers });
+    }
+
+    try {
+        const categories = await reorderWikiCategories(orders);
+        return Response.json({ categories }, { headers });
+    } catch (err) {
+        console.error("Wiki category reorder error:", err.message);
+        return Response.json(
+            { error: err.message || "Failed to reorder categories" },
             { status: 500, headers }
         );
     }

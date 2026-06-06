@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { hasDiscordRole } from "@/lib/discord";
-import { createWikiPage, getWikiIndex, getWikiCategories, getWikiPageBySlug, buildWikiSlug } from "@/lib/wiki";
+import { createWikiPage, getWikiIndex, getWikiCategories, getWikiHomepage, buildWikiSlug } from "@/lib/wiki";
 
 const WIKI_EDITOR_ROLE_ID = process.env.DISCORD_WIKI_EDITOR_ROLE_ID;
 
@@ -15,47 +15,92 @@ export async function GET() {
     const canCreate = Boolean(discordId && (await hasDiscordRole(discordId, WIKI_EDITOR_ROLE_ID)));
 
     try {
-        const pages = await getWikiIndex();
+        const allPages = await getWikiIndex();
 
-        // Build categories from page data (backwards compatible)
-        const pageCategoryMap = pages.reduce((map, page) => {
-            const category = page.category || "Uncategorized";
-            const list = map.get(category) || [];
+        // Exclude the homepage page from category listings
+        const pages = allPages.filter((p) => !p.is_homepage);
+
+        // Build page-category mapping
+        const pageCategoryMap = new Map();
+        for (const page of pages) {
+            const cat = page.category || "Uncategorized";
+            const list = pageCategoryMap.get(cat) || [];
             list.push(page);
-            map.set(category, list);
-            return map;
-        }, new Map());
+            pageCategoryMap.set(cat, list);
+        }
 
         // Load standalone categories from the dedicated table
         const standaloneCategories = await getWikiCategories();
 
-        // Merge: standalone categories that don't yet have pages still appear (empty)
-        const mergedCategories = [];
-        const seen = new Set();
+        // Build category lookup from standalone + page-derived
+        const allCatNames = new Set(standaloneCategories.map((c) => c.name));
+        for (const cat of pageCategoryMap.keys()) allCatNames.add(cat);
 
+        // Build a map of name -> category node
+        const catMap = new Map();
         for (const cat of standaloneCategories) {
-            seen.add(cat.name);
-            mergedCategories.push({
+            catMap.set(cat.name, {
                 name: cat.name,
+                parentName: cat.parent_name || null,
                 description: cat.description || "",
+                displayOrder: cat.display_order ?? 0,
                 pages: pageCategoryMap.get(cat.name) || [],
+                children: [],
             });
         }
-
-        // Add any page-derived categories not already in the standalone list
+        // Add page-derived categories not in standalone
         for (const [name, catPages] of pageCategoryMap) {
-            if (!seen.has(name)) {
-                mergedCategories.push({ name, description: "", pages: catPages });
+            if (!catMap.has(name)) {
+                catMap.set(name, {
+                    name,
+                    parentName: null,
+                    description: "",
+                    displayOrder: 0,
+                    pages: catPages,
+                    children: [],
+                });
             }
         }
 
-        // Sort: categories with display_order from standalone first, then alphabetical
-        mergedCategories.sort((a, b) => a.name.localeCompare(b.name));
+        // Build tree: nest children under parents
+        const roots = [];
+        for (const node of catMap.values()) {
+            if (node.parentName && catMap.has(node.parentName)) {
+                catMap.get(node.parentName).children.push(node);
+            } else {
+                roots.push(node);
+            }
+        }
 
-        // Fetch the home page for the main landing display
-        const homePage = await getWikiPageBySlug("home");
+        // Sort each level by display_order, then name
+        const sortTree = (nodes) => {
+            nodes.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || a.name.localeCompare(b.name));
+            for (const node of nodes) sortTree(node.children);
+        };
+        sortTree(roots);
 
-        return Response.json({ pages, categories: mergedCategories, canCreate, homePage }, { headers });
+        // Flatten for the API response (with depth info)
+        const flattenTree = (nodes, depth = 0) => {
+            const result = [];
+            for (const node of nodes) {
+                result.push({
+                    name: node.name,
+                    parentName: node.parentName,
+                    description: node.description,
+                    displayOrder: node.displayOrder,
+                    depth,
+                    pages: node.pages,
+                    children: flattenTree(node.children, depth + 1),
+                });
+            }
+            return result;
+        };
+        const categories = flattenTree(roots);
+
+        // Fetch the designated homepage
+        const homepagePage = await getWikiHomepage();
+
+        return Response.json({ pages, categories, canCreate, homePage: homepagePage }, { headers });
     } catch (err) {
         console.error("Wiki index error:", err.message);
         return Response.json({ error: "Failed to load wiki index" }, { status: 500, headers });
@@ -78,13 +123,14 @@ export async function POST(request) {
     const category = String(body.category || "General").trim();
     const content = String(body.content || "").trim();
     const slug = buildWikiSlug(body.slug || title);
+    const isHomepage = Boolean(body.isHomepage);
 
     if (!title || !content || !slug) {
         return Response.json({ error: "Title, slug, and content are required" }, { status: 400 });
     }
 
     try {
-        const page = await createWikiPage({ title, slug, category, content });
+        const page = await createWikiPage({ title, slug, category, content, isHomepage });
         return Response.json(page, { status: 201, headers });
     } catch (err) {
         console.error("Wiki create error:", err.message);

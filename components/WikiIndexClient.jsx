@@ -7,6 +7,176 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 
+/* ─── Recursive sidebar category link ─── */
+function SidebarCategory({ cat, activeCategory, onSelect, depth, canCreate, onDelete, onMove, onDrop }) {
+    const indent = depth * 12;
+    const [dragOver, setDragOver] = useState(false);
+
+    function handleDragStart(e) {
+        e.dataTransfer.setData("text/plain", cat.name);
+        e.dataTransfer.effectAllowed = "move";
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        setDragOver(true);
+    }
+
+    function handleDragLeave() {
+        setDragOver(false);
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        setDragOver(false);
+        const draggedName = e.dataTransfer.getData("text/plain");
+        if (draggedName && draggedName !== cat.name) {
+            onDrop(draggedName, cat.name);
+        }
+    }
+
+    return (
+        <>
+            <div
+                className={`group flex items-center transition-colors ${dragOver ? "bg-violet-500/10 rounded" : ""}`}
+                draggable={canCreate}
+                onDragStart={canCreate ? handleDragStart : undefined}
+                onDragOver={canCreate ? handleDragOver : undefined}
+                onDragLeave={canCreate ? handleDragLeave : undefined}
+                onDrop={canCreate ? handleDrop : undefined}
+            >
+                {canCreate && (
+                    <span
+                        className="ml-1 flex-shrink-0 cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400 transition select-none text-xs leading-none opacity-0 group-hover:opacity-100"
+                        title="Drag to reorder"
+                    >
+                        ⋮⋮
+                    </span>
+                )}
+                <button
+                    type="button"
+                    onClick={() => onSelect(cat.name)}
+                    style={{ paddingLeft: canCreate ? 4 : (12 + indent) }}
+                    className={`block flex-1 py-2 pr-3 text-left text-sm transition border-l-2 ${activeCategory === cat.name
+                        ? "font-semibold text-white border-violet-500"
+                        : "text-slate-400 hover:text-slate-200 border-transparent"
+                        }`}
+                >
+                    {cat.name}
+                    {cat.pages.length > 0 && (
+                        <span className="ml-1 text-xs text-slate-500">({cat.pages.length})</span>
+                    )}
+                </button>
+                {canCreate && (
+                    <span className="hidden group-hover:inline-flex items-center gap-0.5 mr-1">
+                        <button
+                            type="button"
+                            title="Move up"
+                            onClick={() => onMove(cat.name, "up")}
+                            className="flex h-5 w-5 items-center justify-center rounded text-slate-500 hover:bg-slate-800 hover:text-slate-300 transition text-[10px] leading-none"
+                        >
+                            ▲
+                        </button>
+                        <button
+                            type="button"
+                            title="Move down"
+                            onClick={() => onMove(cat.name, "down")}
+                            className="flex h-5 w-5 items-center justify-center rounded text-slate-500 hover:bg-slate-800 hover:text-slate-300 transition text-[10px] leading-none"
+                        >
+                            ▼
+                        </button>
+                        <button
+                            type="button"
+                            title={`Delete "${cat.name}" category`}
+                            onClick={() => onDelete(cat.name)}
+                            className="flex h-5 w-5 items-center justify-center rounded text-slate-500 hover:bg-slate-800 hover:text-rose-400 transition text-xs"
+                        >
+                            ×
+                        </button>
+                    </span>
+                )}
+            </div>
+            {cat.children?.map((child) => (
+                <SidebarCategory
+                    key={child.name}
+                    cat={child}
+                    activeCategory={activeCategory}
+                    onSelect={onSelect}
+                    depth={depth + 1}
+                    canCreate={canCreate}
+                    onDelete={onDelete}
+                    onMove={onMove}
+                    onDrop={onDrop}
+                />
+            ))}
+        </>
+    );
+}
+
+/* ─── Recursive main-area category section ─── */
+function CategorySection({ cat, searchQuery, depth }) {
+    const headingTag = depth === 0 ? "h2" : "h3";
+    const headingClass =
+        depth === 0
+            ? "text-2xl font-serif font-bold text-white border-b border-slate-800 pb-2"
+            : "text-lg font-serif font-semibold text-white border-b border-slate-700/50 pb-1.5";
+    const marginLeft = depth * 16;
+
+    const query = searchQuery.trim().toLowerCase();
+    const filteredPages = query
+        ? cat.pages.filter(
+            (p) =>
+                p.title.toLowerCase().includes(query) ||
+                p.slug.toLowerCase().includes(query)
+        )
+        : cat.pages;
+
+    const hasContent = filteredPages.length > 0 || (cat.children && cat.children.length > 0);
+    if (!hasContent) return null;
+
+    return (
+        <section className="space-y-3" style={{ marginLeft }}>
+            {headingTag === "h2" ? (
+                <h2 className={headingClass}>{cat.name}</h2>
+            ) : (
+                <h3 className={headingClass}>{cat.name}</h3>
+            )}
+            {filteredPages.length > 0 && (
+                <ul className="space-y-1.5">
+                    {filteredPages.map((page) => (
+                        <li key={page.slug}>
+                            <Link
+                                href={`/wiki/${page.slug}`}
+                                className="text-violet-400 hover:text-violet-300 transition hover:underline text-sm"
+                            >
+                                {page.title}
+                            </Link>
+                            <span className="text-xs text-slate-500 ml-2">
+                                Updated {new Date(page.updated_at).toLocaleDateString()}
+                            </span>
+                            {page.is_homepage ? (
+                                <span className="ml-1.5 text-[10px] px-1.5 py-0.5 bg-violet-500/20 text-violet-300 rounded-full">
+                                    Home
+                                </span>
+                            ) : null}
+                        </li>
+                    ))}
+                </ul>
+            )}
+            {cat.children?.map((child) => (
+                <CategorySection
+                    key={child.name}
+                    cat={child}
+                    searchQuery={searchQuery}
+                    depth={depth + 1}
+                />
+            ))}
+        </section>
+    );
+}
+
+/* ─── Main component ─── */
 export default function WikiIndexClient() {
     const { status } = useSession();
     const [pages, setPages] = useState([]);
@@ -18,8 +188,9 @@ export default function WikiIndexClient() {
     const [error, setError] = useState(null);
     const [homePage, setHomePage] = useState(null);
 
-    // Category management state
+    // Category management
     const [newCategoryName, setNewCategoryName] = useState("");
+    const [newCategoryParent, setNewCategoryParent] = useState("");
     const [addingCategory, setAddingCategory] = useState(false);
     const [categoryMsg, setCategoryMsg] = useState(null);
 
@@ -27,14 +198,12 @@ export default function WikiIndexClient() {
         async function load() {
             setLoading(true);
             setError(null);
-
             try {
                 const res = await fetch("/api/wiki");
                 if (!res.ok) {
                     const body = await res.json().catch(() => ({}));
                     throw new Error(body.error || "Failed to load wiki index");
                 }
-
                 const data = await res.json();
                 setPages(data.pages || []);
                 setCategories(data.categories || []);
@@ -46,7 +215,6 @@ export default function WikiIndexClient() {
                 setLoading(false);
             }
         }
-
         load();
     }, [status]);
 
@@ -62,26 +230,23 @@ export default function WikiIndexClient() {
             const res = await fetch("/api/wiki/categories", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name, description: "" }),
+                body: JSON.stringify({
+                    name,
+                    description: "",
+                    parentName: newCategoryParent || null,
+                }),
             });
-
             if (!res.ok) {
                 const body = await res.json().catch(() => ({}));
                 throw new Error(body.error || "Failed to add category");
             }
-
-            const data = await res.json();
             setNewCategoryName("");
-
-            // Optimistically add to the list
-            setCategories((prev) => {
-                const exists = prev.some((c) => c.name === data.category.name);
-                if (exists) return prev;
-                return [
-                    ...prev,
-                    { name: data.category.name, description: "", pages: [] },
-                ].sort((a, b) => a.name.localeCompare(b.name));
-            });
+            setNewCategoryParent("");
+            const idxRes = await fetch("/api/wiki");
+            if (idxRes.ok) {
+                const data = await idxRes.json();
+                setCategories(data.categories || []);
+            }
         } catch (err) {
             setCategoryMsg(err.message);
         } finally {
@@ -90,128 +255,222 @@ export default function WikiIndexClient() {
     }
 
     async function handleDeleteCategory(name) {
-        if (!confirm(`Delete the "${name}" category? Pages in this category will NOT be deleted.`)) return;
-
+        if (!confirm(`Delete the "${name}" category? Its sub-categories will become top-level.`)) return;
         setCategoryMsg(null);
-
         try {
-            const res = await fetch(`/api/wiki/categories?name=${encodeURIComponent(name)}`, {
-                method: "DELETE",
-            });
-
+            const res = await fetch(
+                `/api/wiki/categories?name=${encodeURIComponent(name)}`,
+                { method: "DELETE" }
+            );
             if (!res.ok) {
                 const body = await res.json().catch(() => ({}));
                 throw new Error(body.error || "Failed to delete category");
             }
-
-            // Remove from the local list
-            setCategories((prev) => prev.filter((c) => c.name !== name));
             if (activeCategory === name) setActiveCategory("all");
+            const idxRes = await fetch("/api/wiki");
+            if (idxRes.ok) {
+                const data = await idxRes.json();
+                setCategories(data.categories || []);
+            }
         } catch (err) {
             setCategoryMsg(err.message);
         }
     }
 
-    const filteredCategories = useMemo(() => {
-        const query = searchQuery.trim().toLowerCase();
-        return categories
-            .map((category) => ({
-                ...category,
-                pages: category.pages.filter((page) => {
-                    if (!query) return true;
-                    return (
-                        page.title.toLowerCase().includes(query) ||
-                        page.slug.toLowerCase().includes(query)
-                    );
-                }),
-            }))
-            .filter((category) => category.pages.length > 0);
-    }, [categories, searchQuery]);
+    async function handleMoveCategory(name, direction) {
+        const info = findParentAndSiblings(categories, name);
+        if (!info) return;
 
-    const visibleCategories = useMemo(() => {
-        if (activeCategory === "all") {
-            return filteredCategories;
+        const { list, index } = info;
+        const newIndex = index + (direction === "up" ? -1 : 1);
+        if (newIndex < 0 || newIndex >= list.length) return;
+
+        await swapCategories(list, index, newIndex);
+    }
+
+    async function handleDropCategory(draggedName, targetName) {
+        if (draggedName === targetName) return;
+
+        const draggedInfo = findParentAndSiblings(categories, draggedName);
+        const targetInfo = findParentAndSiblings(categories, targetName);
+        if (!draggedInfo || !targetInfo) return;
+
+        // If they're in the same sibling list, move within that list
+        if (draggedInfo.list === targetInfo.list) {
+            await swapCategories(draggedInfo.list, draggedInfo.index, targetInfo.index);
         }
-        return filteredCategories.filter((category) => category.name === activeCategory);
-    }, [filteredCategories, activeCategory]);
+    }
 
-    const totalPages = filteredCategories.reduce((sum, category) => sum + category.pages.length, 0);
+    function findParentAndSiblings(cats, target) {
+        for (let i = 0; i < cats.length; i++) {
+            if (cats[i].name === target) {
+                return { list: cats, index: i };
+            }
+            if (cats[i].children?.length) {
+                const result = findParentAndSiblings(cats[i].children, target);
+                if (result) return result;
+            }
+        }
+        return null;
+    }
+
+    async function swapCategories(list, fromIndex, toIndex) {
+        // Rebuild display_order for the sibling list after the swap
+        const items = [...list];
+        const [moved] = items.splice(fromIndex, 1);
+        items.splice(toIndex, 0, moved);
+
+        const orders = items.map((item, i) => ({
+            name: item.name,
+            display_order: i,
+        }));
+
+        try {
+            const res = await fetch("/api/wiki/categories", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orders }),
+            });
+            if (!res.ok) throw new Error("Failed to reorder");
+
+            // Optimistically update local state
+            setCategories((prev) => {
+                function updateList(cats) {
+                    const newCats = [...cats];
+                    const idx = newCats.findIndex((c) => c.name === moved.name);
+                    if (idx !== -1) {
+                        const [item] = newCats.splice(idx, 1);
+                        newCats.splice(toIndex, 0, { ...item, displayOrder: toIndex });
+                        return newCats.map((c, i) => ({ ...c, displayOrder: i }));
+                    }
+                    return newCats.map((cat) => ({
+                        ...cat,
+                        children: cat.children ? updateList(cat.children) : cat.children,
+                    }));
+                }
+                return updateList(prev);
+            });
+        } catch (err) {
+            setCategoryMsg(err.message);
+        }
+    }
+
+    function flattenCats(cats) {
+        let result = [];
+        for (const c of cats) {
+            result.push(c);
+            if (c.children) result = result.concat(flattenCats(c.children));
+        }
+        return result;
+    }
+
+    const allFlatCats = useMemo(() => flattenCats(categories), [categories]);
+    const totalPages = useMemo(
+        () => allFlatCats.reduce((sum, c) => sum + (c.pages?.length || 0), 0),
+        [allFlatCats]
+    );
+
+    const topLevelCats = useMemo(
+        () => categories.filter((c) => !c.parentName),
+        [categories]
+    );
 
     return (
-        <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+            {/* ── Sidebar ── */}
             <aside className="hidden lg:block">
                 <div className="sticky top-24 space-y-6">
-                    <nav className="space-y-1">
-                        <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Navigation</p>
+                    <nav className="space-y-0.5">
+                        <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            Navigation
+                        </p>
                         <button
                             type="button"
-                            onClick={() => setActiveCategory("all")}
+                            onClick={() => { setActiveCategory("all"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                             className={`block w-full px-3 py-2 text-left text-sm transition border-l-2 ${activeCategory === "all"
                                 ? "font-semibold text-white border-violet-500"
                                 : "text-slate-400 hover:text-slate-200 border-transparent"
                                 }`}
                         >
-                            All pages ({totalPages})
+                            Home
                         </button>
-                        {categories.map((category) => (
-                            <div key={category.name} className="group flex items-center">
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveCategory(category.name)}
-                                    className={`block flex-1 px-3 py-2 text-left text-sm transition border-l-2 ${activeCategory === category.name
-                                        ? "font-semibold text-white border-violet-500"
-                                        : "text-slate-400 hover:text-slate-200 border-transparent"
-                                        }`}
-                                >
-                                    {category.name} ({category.pages.length})
-                                </button>
-                                {canCreate && (
-                                    <button
-                                        type="button"
-                                        title={`Delete "${category.name}" category`}
-                                        onClick={() => handleDeleteCategory(category.name)}
-                                        className="mr-1 flex h-6 w-6 items-center justify-center rounded text-slate-600 opacity-0 group-hover:opacity-100 hover:bg-slate-800 hover:text-rose-400 transition-all text-xs"
-                                    >
-                                        ×
-                                    </button>
-                                )}
-                            </div>
+                        {categories.map((cat) => (
+                            <SidebarCategory
+                                key={cat.name}
+                                cat={cat}
+                                activeCategory={activeCategory}
+                                onSelect={setActiveCategory}
+                                depth={0}
+                                canCreate={canCreate}
+                                onDelete={handleDeleteCategory}
+                                onMove={handleMoveCategory}
+                                onDrop={handleDropCategory}
+                            />
                         ))}
                     </nav>
+
+                    {/* Search */}
+                    <div className="bg-slate-900/50 border border-slate-700 rounded-lg px-3 py-2">
+                        <input
+                            value={searchQuery}
+                            onChange={(event) => setSearchQuery(event.target.value)}
+                            className="w-full bg-transparent text-xs text-white outline-none placeholder-slate-500"
+                            placeholder="Search articles…"
+                        />
+                    </div>
 
                     {canCreate && (
                         <div className="border-t border-slate-800 pt-4 space-y-3">
                             <form onSubmit={handleAddCategory} className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Add Category</p>
-                                <div className="flex gap-1">
-                                    <input
-                                        value={newCategoryName}
-                                        onChange={(e) => setNewCategoryName(e.target.value)}
-                                        placeholder="Category name…"
-                                        className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500 transition placeholder-slate-500"
-                                    />
-                                    <button
-                                        type="submit"
-                                        disabled={addingCategory || !newCategoryName.trim()}
-                                        className="px-2 py-1.5 text-xs font-medium bg-violet-500 text-white rounded hover:bg-violet-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {addingCategory ? "…" : "Add"}
-                                    </button>
-                                </div>
+                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                    Add Category
+                                </p>
+                                <input
+                                    value={newCategoryName}
+                                    onChange={(e) => setNewCategoryName(e.target.value)}
+                                    placeholder="Category name…"
+                                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500 transition placeholder-slate-500"
+                                />
+                                <select
+                                    value={newCategoryParent}
+                                    onChange={(e) => setNewCategoryParent(e.target.value)}
+                                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500 transition"
+                                >
+                                    <option value="">Top level (no parent)</option>
+                                    {topLevelCats.map((cat) => (
+                                        <option key={cat.name} value={cat.name}>
+                                            {cat.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button
+                                    type="submit"
+                                    disabled={addingCategory || !newCategoryName.trim()}
+                                    className="w-full px-2 py-1.5 text-xs font-medium border border-violet-500 text-violet-400 bg-transparent rounded hover:bg-violet-500/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {addingCategory ? "Adding…" : "Add Category"}
+                                </button>
                             </form>
                             {categoryMsg && (
                                 <p className="text-xs text-rose-400">{categoryMsg}</p>
                             )}
+
+                            <Link
+                                href="/wiki/new"
+                                className="block rounded-lg border border-violet-500 text-violet-400 bg-transparent px-3 py-2 text-center text-xs font-medium transition hover:bg-violet-500/10"
+                            >
+                                + Create new article
+                            </Link>
                         </div>
                     )}
                 </div>
             </aside>
 
-            <main className="space-y-10">
-                {/* Home Page Content */}
+            {/* ── Main content ── */}
+            <main className="space-y-10 min-w-0">
+                {/* Home Page */}
                 {homePage && (
-                    <div
-                        className="prose prose-invert max-w-none
+                    <div className="prose prose-invert max-w-none
                         prose-headings:text-white prose-headings:font-serif prose-headings:tracking-tight
                         prose-h1:text-4xl prose-h2:text-2xl prose-h2:mt-10 prose-h3:text-xl
                         prose-a:text-violet-400 prose-a:no-underline hover:prose-a:underline
@@ -222,8 +481,7 @@ export default function WikiIndexClient() {
                         prose-hr:border-slate-800
                         prose-blockquote:border-violet-500 prose-blockquote:not-italic
                         prose-li:text-slate-200
-                    "
-                    >
+                    ">
                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                             {homePage.content}
                         </ReactMarkdown>
@@ -235,12 +493,23 @@ export default function WikiIndexClient() {
                     </div>
                 )}
 
-                {/* Divider + Stats bar */}
+                {/* Divider + Stats */}
                 <div className="space-y-4 border-t border-slate-800 pt-8">
                     <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
                         <span>{totalPages} articles</span>
                         <span>·</span>
-                        <span>{categories.length} categories</span>
+                        <span>{allFlatCats.length} categories</span>
+                        {homePage && (
+                            <>
+                                <span>·</span>
+                                <Link
+                                    href={`/wiki/${homePage.slug}/edit`}
+                                    className="text-violet-400 hover:text-violet-300 transition"
+                                >
+                                    Edit homepage
+                                </Link>
+                            </>
+                        )}
                         {canCreate && (
                             <>
                                 <span>·</span>
@@ -262,39 +531,38 @@ export default function WikiIndexClient() {
 
                 {!loading && !error && (
                     <div className="space-y-8">
-                        <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-4">
-                            <input
-                                value={searchQuery}
-                                onChange={(event) => setSearchQuery(event.target.value)}
-                                className="w-full bg-transparent text-white outline-none placeholder-slate-500"
-                                placeholder="Search articles…"
-                            />
-                        </div>
-
-                        {visibleCategories.length === 0 ? (
-                            <div className="text-slate-400 text-sm">No articles match that search.</div>
-                        ) : (
-                            visibleCategories.map((category) => (
-                                <section key={category.name} className="space-y-4">
-                                    <h2 className="text-2xl font-serif font-bold text-white border-b border-slate-800 pb-2">{category.name}</h2>
-                                    <ul className="space-y-2">
-                                        {category.pages.map((page) => (
-                                            <li key={page.slug}>
-                                                <Link
-                                                    href={`/wiki/${page.slug}`}
-                                                    className="text-violet-400 hover:text-violet-300 transition hover:underline"
-                                                >
-                                                    {page.title}
-                                                </Link>
-                                                <span className="text-xs text-slate-500 ml-2">
-                                                    Updated {new Date(page.updated_at).toLocaleDateString()}
-                                                </span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </section>
-                            ))
+                        {allFlatCats.length === 0 && !searchQuery && (
+                            <div className="text-slate-400 text-sm">
+                                No categories yet. Editors can add categories using the sidebar.
+                            </div>
                         )}
+
+                        {categories.map((cat) => (
+                            <CategorySection
+                                key={cat.name}
+                                cat={cat}
+                                searchQuery={searchQuery}
+                                depth={0}
+                            />
+                        ))}
+
+                        {allFlatCats.length > 0 &&
+                            categories.every((cat) => {
+                                const q = searchQuery.trim().toLowerCase();
+                                const hasPages = cat.pages.some(
+                                    (p) =>
+                                        !q ||
+                                        p.title.toLowerCase().includes(q) ||
+                                        p.slug.toLowerCase().includes(q)
+                                );
+                                const hasKids = cat.children && cat.children.length > 0;
+                                return !hasPages && !hasKids;
+                            }) &&
+                            searchQuery && (
+                                <div className="text-slate-400 text-sm">
+                                    No articles match that search.
+                                </div>
+                            )}
                     </div>
                 )}
             </main>

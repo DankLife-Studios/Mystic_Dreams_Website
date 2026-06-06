@@ -15,31 +15,60 @@ export default async function WikiSlugPage({ params }) {
         return notFound();
     }
 
-    const pages = await getWikiIndex();
+    const allPages = await getWikiIndex();
     const standaloneCategories = await getWikiCategories();
 
-    // Merge standalone categories with page-derived ones
-    const pageCategoryMap = pages.reduce((map, item) => {
-        const category = item.category || "Uncategorized";
-        const list = map.get(category) || [];
+    // Exclude homepage from category listings
+    const pages = allPages.filter((p) => !p.is_homepage);
+
+    // Build page-category mapping
+    const pageCategoryMap = new Map();
+    for (const item of pages) {
+        const cat = item.category || "Uncategorized";
+        const list = pageCategoryMap.get(cat) || [];
         list.push(item);
-        map.set(category, list);
-        return map;
-    }, new Map());
+        pageCategoryMap.set(cat, list);
+    }
 
-    const seen = new Set();
-    const categories = [];
-
+    // Build tree from standalone categories
+    const catMap = new Map();
     for (const cat of standaloneCategories) {
-        seen.add(cat.name);
-        categories.push({ name: cat.name, pages: pageCategoryMap.get(cat.name) || [] });
+        catMap.set(cat.name, {
+            name: cat.name,
+            parentName: cat.parent_name || null,
+            displayOrder: cat.display_order ?? 0,
+            pages: pageCategoryMap.get(cat.name) || [],
+            children: [],
+        });
     }
     for (const [name, catPages] of pageCategoryMap) {
-        if (!seen.has(name)) {
-            categories.push({ name, pages: catPages });
+        if (!catMap.has(name)) {
+            catMap.set(name, { name, parentName: null, displayOrder: 0, pages: catPages, children: [] });
         }
     }
-    categories.sort((a, b) => a.name.localeCompare(b.name));
+    const roots = [];
+    for (const node of catMap.values()) {
+        if (node.parentName && catMap.has(node.parentName)) {
+            catMap.get(node.parentName).children.push(node);
+        } else {
+            roots.push(node);
+        }
+    }
+    const sortTree = (nodes) => {
+        nodes.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || a.name.localeCompare(b.name));
+        for (const node of nodes) sortTree(node.children);
+    };
+    sortTree(roots);
+
+    const flattenTree = (nodes, depth = 0) => {
+        const result = [];
+        for (const node of nodes) {
+            result.push({ name: node.name, pages: node.pages, depth });
+            if (node.children) result.push(...flattenTree(node.children, depth + 1));
+        }
+        return result;
+    };
+    const categories = flattenTree(roots);
 
     const relatedPages = pages
         .filter((item) => item.category === page.category && item.slug !== page.slug)
@@ -62,12 +91,16 @@ export default async function WikiSlugPage({ params }) {
                                 <Link
                                     key={category.name}
                                     href="/wiki"
+                                    style={{ paddingLeft: 12 + category.depth * 12 }}
                                     className={`block px-3 py-2 text-sm transition border-l-2 ${category.name === page.category
                                         ? "font-semibold text-white border-violet-500"
                                         : "text-slate-400 hover:text-slate-200 border-transparent"
                                         }`}
                                 >
                                     {category.name}
+                                    {category.pages.length > 0 && (
+                                        <span className="ml-1 text-xs text-slate-500">({category.pages.length})</span>
+                                    )}
                                 </Link>
                             ))}
                         </nav>
@@ -113,7 +146,7 @@ export default async function WikiSlugPage({ params }) {
                             </Link>
                             <Link
                                 href={`/wiki/${page.slug}/edit`}
-                                className="px-4 py-2 text-sm font-medium text-white bg-violet-500 rounded hover:bg-violet-400 transition"
+                                className="px-4 py-2 text-sm font-medium border border-violet-500 text-violet-400 bg-transparent rounded hover:bg-violet-500/10 transition"
                             >
                                 Edit this page
                             </Link>
