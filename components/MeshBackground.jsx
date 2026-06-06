@@ -1,5 +1,5 @@
 export default function MeshBackground({ variant = "default" }) {
-    const opacity = variant === "hero" ? "opacity-60" : "opacity-40";
+    const opacity = variant === "hero" ? "opacity-30" : "opacity-40";
 
     return (
         <div className={`pointer-events-none absolute inset-0 overflow-hidden ${opacity}`}>

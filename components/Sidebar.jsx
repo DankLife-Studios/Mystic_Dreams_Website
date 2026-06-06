@@ -18,7 +18,7 @@ const NAV_AUTH = [
     { href: "/city", label: "City", icon: "fa-city" },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen = false, onClose = () => { } }) {
     const pathname = usePathname();
     const { data: session, status } = useSession();
     const nav = session ? [...NAV_PUBLIC, ...NAV_AUTH] : NAV_PUBLIC;
@@ -29,8 +29,32 @@ export default function Sidebar() {
         return pathname.startsWith(href);
     };
 
+    const handleNav = (href) => {
+        onClose();
+    };
+
     return (
-        <aside className="fixed left-3 top-3 bottom-3 z-50 flex w-64 flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-secondary)] shadow-2xl shadow-purple-500/10">
+        <aside
+            className={`sidebar-desktop fixed left-3 top-3 bottom-3 z-50 flex w-64 flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-secondary)] shadow-2xl shadow-purple-500/10
+                lg:translate-x-0 lg:opacity-100 lg:pointer-events-auto
+                ${isOpen
+                    ? "sidebar-mobile-open translate-x-0 opacity-100 pointer-events-auto"
+                    : "-translate-x-full opacity-0 pointer-events-none lg:translate-x-0 lg:opacity-100 lg:pointer-events-auto"
+                }
+                transition-transform duration-300 ease-in-out`}
+        >
+            {/* Mobile close button */}
+            <div className="lg:hidden absolute top-3 right-3 z-10">
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex items-center justify-center w-8 h-8 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-muted)] transition-colors"
+                    aria-label="Close menu"
+                >
+                    <i className="fa-regular fa-xmark text-lg" />
+                </button>
+            </div>
+
             {/* Server header */}
             <div className="relative border-b border-[var(--border)] bg-[var(--card-bg)] px-5 py-4">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent" />
@@ -53,7 +77,7 @@ export default function Sidebar() {
             </div>
 
             {/* Nav channels */}
-            <nav className="flex-1 overflow-y-auto px-3 py-4">
+            <nav className="flex-1 overflow-y-auto px-3 py-4 overscroll-contain">
                 <p className="mb-3 flex items-center gap-2 px-3 text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--text-muted)]">
                     <span className="block h-1 w-1 rounded-full bg-purple-500/50" />
                     Navigation
@@ -65,9 +89,10 @@ export default function Sidebar() {
                             <Link
                                 key={item.href}
                                 href={item.href}
+                                onClick={() => handleNav(item.href)}
                                 className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${active
-                                        ? "bg-purple-500/15 text-[var(--accent)]"
-                                        : "text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
+                                    ? "bg-purple-500/15 text-[var(--accent)]"
+                                    : "text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
                                     }`}
                             >
                                 <span
@@ -94,6 +119,7 @@ export default function Sidebar() {
                         <div className="space-y-0.5">
                             <Link
                                 href="/dashboard"
+                                onClick={() => onClose()}
                                 className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-[var(--surface-muted)]"
                             >
                                 {session.user?.image ? (

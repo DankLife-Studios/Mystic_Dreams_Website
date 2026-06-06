@@ -1,7 +1,6 @@
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
-import Footer from "@/components/Footer";
+import ClientShell from "@/components/ClientShell";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SessionProvider from "@/components/SessionProvider";
 import { SITE } from "@/lib/site";
@@ -31,8 +30,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
     return (
-        <html lang="en" suppressHydrationWarning>
+        <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
             <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+                <meta name="theme-color" content="#0c0a10" />
+                <meta name="apple-mobile-web-app-capable" content="yes" />
+                <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
                 <link
                     rel="stylesheet"
                     href="https://kit-pro.fontawesome.com/releases/v7.2.0/css/pro.min.css"
@@ -49,11 +52,7 @@ export default function RootLayout({ children }) {
             >
                 <SessionProvider>
                     <ThemeProvider>
-                        <Sidebar />
-                        <div className="ml-[280px] mr-3 mt-3 flex min-h-screen flex-col">
-                            <main className="page-shell flex-1">{children}</main>
-                            <Footer />
-                        </div>
+                        <ClientShell>{children}</ClientShell>
                     </ThemeProvider>
                 </SessionProvider>
             </body>
