@@ -151,8 +151,8 @@ function CategorySection({ cat, searchQuery, depth }) {
     const headingTag = depth === 0 ? "h2" : "h3";
     const headingClass =
         depth === 0
-            ? "text-2xl font-serif font-bold text-white border-b border-slate-800 pb-2"
-            : "text-lg font-serif font-semibold text-white border-b border-slate-700/50 pb-1.5";
+            ? "text-2xl font-serif font-bold text-[var(--text-primary)] border-b border-[var(--border)] pb-2"
+            : "text-lg font-serif font-semibold text-[var(--text-primary)] border-b border-[var(--border)] pb-1.5";
     const marginLeft = depth * 16;
 
     const query = searchQuery.trim().toLowerCase();
@@ -180,11 +180,11 @@ function CategorySection({ cat, searchQuery, depth }) {
                         <li key={page.slug}>
                             <Link
                                 href={`/wiki/${page.slug}`}
-                                className="text-violet-400 hover:text-violet-300 transition hover:underline text-sm"
+                                className="text-[var(--accent)] hover:opacity-80 transition hover:underline text-sm"
                             >
                                 {page.title}
                             </Link>
-                            <span className="text-xs text-slate-500 ml-2">
+                            <span className="text-xs text-[var(--text-muted)] ml-2">
                                 Updated {new Date(page.updated_at).toLocaleDateString()}
                             </span>
                             {page.is_homepage ? (
@@ -416,23 +416,24 @@ export default function WikiIndexClient() {
         <main className="space-y-10 min-w-0">
             {/* Home Page */}
             {homePage && (
-                <div className="prose prose-invert max-w-none
-                        prose-headings:text-white prose-headings:font-serif prose-headings:tracking-tight
+                <div className="prose max-w-none
+                        prose-headings:text-[var(--text-primary)] prose-headings:font-serif prose-headings:tracking-tight
                         prose-h1:text-4xl prose-h2:text-2xl prose-h2:mt-10 prose-h3:text-xl
-                        prose-a:text-violet-400 prose-a:no-underline hover:prose-a:underline
-                        prose-strong:text-white
+                        prose-a:text-[var(--accent)] prose-a:no-underline hover:prose-a:underline
+                        prose-strong:text-[var(--text-primary)]
                         prose-code:before:content-none prose-code:after:content-none
-                        prose-pre:border prose-pre:border-slate-800 prose-pre:rounded-xl
+                        prose-pre:border prose-pre:border-[var(--border)] prose-pre:rounded-xl
                         prose-img:rounded-xl prose-img:shadow-lg
-                        prose-hr:border-slate-800
-                        prose-blockquote:border-violet-500 prose-blockquote:not-italic
-                        prose-li:text-slate-200
+                        prose-hr:border-[var(--border)]
+                        prose-blockquote:border-[var(--accent)] prose-blockquote:not-italic
+                        prose-p:text-[var(--text-secondary)]
+                        prose-li:text-[var(--text-secondary)]
                     ">
                     <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                         {homePage.content}
                     </ReactMarkdown>
                     {homePage.updated_at && (
-                        <p className="mt-6 text-sm text-slate-500">
+                        <p className="mt-6 text-sm text-[var(--text-muted)]">
                             Last updated: {new Date(homePage.updated_at).toLocaleDateString()}
                         </p>
                     )}
@@ -440,8 +441,8 @@ export default function WikiIndexClient() {
             )}
 
             {/* Divider + Stats */}
-            <div className="space-y-4 border-t border-slate-800 pt-8">
-                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
+            <div className="space-y-4 border-t border-[var(--border)] pt-8">
+                <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--text-muted)]">
                     <span>{totalPages} articles</span>
                     <span>·</span>
                     <span>{allFlatCats.length} categories</span>
@@ -450,7 +451,7 @@ export default function WikiIndexClient() {
                             <span>·</span>
                             <Link
                                 href={`/wiki/${homePage.slug}/edit`}
-                                className="text-violet-400 hover:text-violet-300 transition"
+                                className="text-[var(--accent)] hover:opacity-80 transition"
                             >
                                 Edit homepage
                             </Link>
@@ -459,7 +460,7 @@ export default function WikiIndexClient() {
                     {canCreate && (
                         <>
                             <span>·</span>
-                            <Link href="/wiki/new" className="text-violet-400 hover:text-violet-300 transition">
+                            <Link href="/wiki/new" className="text-[var(--accent)] hover:opacity-80 transition">
                                 Write an article
                             </Link>
                         </>
@@ -473,13 +474,13 @@ export default function WikiIndexClient() {
                 </div>
             )}
 
-            {loading && <div className="text-slate-400">Loading wiki index…</div>}
+            {loading && <div className="text-[var(--text-muted)]">Loading wiki index…</div>}
 
             {!loading && !error && (
                 <div className="space-y-8">
                     {allFlatCats.length === 0 && !searchQuery && (
-                        <div className="text-slate-400 text-sm">
-                            No categories yet. Editors can add categories using the sidebar.
+                        <div className="text-[var(--text-muted)] text-sm">
+                            No categories yet. Editors can add categories using the navbar.
                         </div>
                     )}
 
@@ -505,7 +506,7 @@ export default function WikiIndexClient() {
                             return !hasPages && !hasKids;
                         }) &&
                         searchQuery && (
-                            <div className="text-slate-400 text-sm">
+                            <div className="text-[var(--text-muted)] text-sm">
                                 No articles match that search.
                             </div>
                         )}

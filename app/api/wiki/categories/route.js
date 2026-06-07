@@ -76,6 +76,7 @@ export async function PUT(request) {
 
     const body = await request.json();
     const name = String(body.name || "").trim();
+    const newName = body.newName ? String(body.newName).trim() : null;
 
     if (!name) {
         return Response.json({ error: "Category name is required" }, { status: 400, headers });
@@ -83,6 +84,7 @@ export async function PUT(request) {
 
     try {
         const category = await updateWikiCategory(name, {
+            newName,
             description: body.description,
             parentName: body.parentName,
             displayOrder: body.displayOrder,

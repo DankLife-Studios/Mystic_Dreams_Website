@@ -39,8 +39,11 @@ export default function WikiNavbar() {
     const [addingCategory, setAddingCategory] = useState(false);
     const [categoryMsg, setCategoryMsg] = useState(null);
     const [editingCategory, setEditingCategory] = useState(null);
+    const [editCategoryName, setEditCategoryName] = useState("");
     const [editCategoryParent, setEditCategoryParent] = useState("");
     const [editingCategoryMsg, setEditingCategoryMsg] = useState(null);
+    const [dragCategory, setDragCategory] = useState(null);
+    const [dragOverCategory, setDragOverCategory] = useState(null);
 
     useEffect(() => {
         async function load() {
@@ -118,6 +121,7 @@ export default function WikiNavbar() {
 
     function openEditCategory(cat) {
         setEditingCategory(cat.name);
+        setEditCategoryName(cat.name);
         setEditCategoryParent(cat.parentName || "");
         setEditingCategoryMsg(null);
     }
@@ -125,6 +129,8 @@ export default function WikiNavbar() {
     async function handleEditCategory(event) {
         event.preventDefault();
         if (!editingCategory) return;
+        const newName = editCategoryName.trim();
+        if (!newName) { setEditingCategoryMsg("Name is required"); return; }
         setEditingCategoryMsg(null);
         try {
             const res = await fetch("/api/wiki/categories", {
@@ -132,6 +138,7 @@ export default function WikiNavbar() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     name: editingCategory,
+                    newName: newName !== editingCategory ? newName : undefined,
                     parentName: editCategoryParent || null,
                 }),
             });
@@ -144,6 +151,57 @@ export default function WikiNavbar() {
         } catch (err) {
             setEditingCategoryMsg(err.message);
         }
+    }
+
+    // ── Drag & drop reordering ──
+    function handleDragStart(e, name) {
+        setDragCategory(name);
+        e.dataTransfer.setData("text/plain", name);
+        e.dataTransfer.effectAllowed = "move";
+    }
+
+    function handleDragOver(e, name) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        if (dragCategory && dragCategory !== name) {
+            setDragOverCategory(name);
+        }
+    }
+
+    function handleDragLeave() {
+        setDragOverCategory(null);
+    }
+
+    async function handleDrop(e, targetName) {
+        e.preventDefault();
+        setDragOverCategory(null);
+        setDragCategory(null);
+        const draggedName = e.dataTransfer.getData("text/plain");
+        if (!draggedName || draggedName === targetName) return;
+
+        // Find indices in the categories array (top-level only for simplicity)
+        const fromIndex = categories.findIndex((c) => c.name === draggedName);
+        const toIndex = categories.findIndex((c) => c.name === targetName);
+        if (fromIndex === -1 || toIndex === -1) return;
+
+        const items = [...categories];
+        const [moved] = items.splice(fromIndex, 1);
+        items.splice(toIndex, 0, moved);
+        const orders = items.map((item, i) => ({ name: item.name, display_order: i }));
+
+        try {
+            await fetch("/api/wiki/categories", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orders }),
+            });
+            await reloadCategories();
+        } catch { /* silent */ }
+    }
+
+    function handleDragEnd() {
+        setDragCategory(null);
+        setDragOverCategory(null);
     }
 
     // Build a flat list for search filtering
@@ -193,17 +251,31 @@ export default function WikiNavbar() {
                 const isOpen = openDropdown === cat.name;
                 const hasContent = (cat.pages?.length || 0) > 0 || (cat.children?.length || 0) > 0;
                 const isActive = currentCategory === cat.name;
+                const isDragOver = dragOverCategory === cat.name;
+                const isDragging = dragCategory === cat.name;
 
                 return (
                     <div key={cat.name} className="relative">
                         <button
                             type="button"
+                            draggable={canCreate}
+                            onDragStart={canCreate ? (e) => handleDragStart(e, cat.name) : undefined}
+                            onDragOver={canCreate ? (e) => handleDragOver(e, cat.name) : undefined}
+                            onDragLeave={canCreate ? handleDragLeave : undefined}
+                            onDrop={canCreate ? (e) => handleDrop(e, cat.name) : undefined}
+                            onDragEnd={canCreate ? handleDragEnd : undefined}
                             onClick={() => setOpenDropdown(isOpen ? null : cat.name)}
-                            className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${isActive || isOpen
-                                ? "bg-purple-500/15 text-[var(--accent)]"
-                                : "text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
+                            className={`group flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${isActive || isOpen
+                                    ? "bg-purple-500/15 text-[var(--accent)]"
+                                    : "text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
+                                } ${isDragOver ? "ring-2 ring-purple-500/50 bg-purple-500/10 scale-105" : ""} ${isDragging ? "opacity-50 scale-95" : ""
                                 }`}
                         >
+                            {canCreate && (
+                                <span className="flex-shrink-0 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity text-[10px] leading-none cursor-grab active:cursor-grabbing select-none">
+                                    ⋮⋮
+                                </span>
+                            )}
                             <i className="fa-regular fa-folder text-sm" />
                             {cat.name}
                             <i className={`fa-regular fa-chevron-${isOpen ? "up" : "down"} text-[10px] transition-transform`} />
@@ -271,8 +343,14 @@ export default function WikiNavbar() {
                                         {editingCategory === cat.name ? (
                                             <form onSubmit={handleEditCategory} className="px-3 py-2 space-y-2">
                                                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                                                    Edit {cat.name}
+                                                    Edit category
                                                 </p>
+                                                <input
+                                                    value={editCategoryName}
+                                                    onChange={(e) => setEditCategoryName(e.target.value)}
+                                                    placeholder="Category name"
+                                                    className="w-full bg-[var(--surface-muted)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)] outline-none focus:border-purple-500/50 transition placeholder-[var(--text-muted)]"
+                                                />
                                                 <select
                                                     value={editCategoryParent}
                                                     onChange={(e) => setEditCategoryParent(e.target.value)}

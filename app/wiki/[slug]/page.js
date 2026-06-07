@@ -19,38 +19,39 @@ export default async function WikiSlugPage({ params }) {
         <PageShell>
             <main className="space-y-8">
                 <article>
-                    <div className="space-y-4 border-b border-slate-800 pb-6">
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
-                            <Link href="/wiki" className="hover:text-slate-300 transition">Wiki</Link>
+                    <div className="space-y-4 border-b border-[var(--border)] pb-6">
+                        <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--text-muted)]">
+                            <Link href="/wiki" className="hover:text-[var(--text-primary)] transition">Wiki</Link>
                             <span>/</span>
-                            <Link href="/wiki" className="hover:text-slate-300 transition">{page.category}</Link>
+                            <Link href="/wiki" className="hover:text-[var(--text-primary)] transition">{page.category}</Link>
                         </div>
-                        <h1 className="text-5xl font-serif font-bold tracking-tight text-white">{page.title}</h1>
-                        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-400">
-                            <span className="px-2 py-1 bg-slate-900 rounded text-slate-300">Category: {page.category}</span>
+                        <h1 className="text-5xl font-serif font-bold tracking-tight text-[var(--text-primary)]">{page.title}</h1>
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--text-muted)]">
+                            <span className="px-2 py-1 bg-[var(--surface-muted)] rounded text-[var(--text-secondary)]">Category: {page.category}</span>
                             <span>Updated {new Date(page.updated_at).toLocaleDateString()}</span>
                         </div>
                     </div>
 
-                    <div className="prose prose-invert max-w-none py-8
-                            prose-headings:text-white prose-headings:font-serif prose-headings:tracking-tight
+                    <div className="prose max-w-none py-8
+                            prose-headings:text-[var(--text-primary)] prose-headings:font-serif prose-headings:tracking-tight
                             prose-h1:text-4xl prose-h2:text-2xl prose-h2:mt-10 prose-h3:text-xl
-                            prose-a:text-violet-400 prose-a:no-underline hover:prose-a:underline
-                            prose-strong:text-white
+                            prose-a:text-[var(--accent)] prose-a:no-underline hover:prose-a:underline
+                            prose-strong:text-[var(--text-primary)]
                             prose-code:before:content-none prose-code:after:content-none
-                            prose-pre:border prose-pre:border-slate-800 prose-pre:rounded-xl
+                            prose-pre:border prose-pre:border-[var(--border)] prose-pre:rounded-xl
                             prose-img:rounded-xl prose-img:shadow-lg
-                            prose-hr:border-slate-800
-                            prose-blockquote:border-violet-500 prose-blockquote:not-italic
-                            prose-li:text-slate-200
+                            prose-hr:border-[var(--border)]
+                            prose-blockquote:border-[var(--accent)] prose-blockquote:not-italic
+                            prose-p:text-[var(--text-secondary)]
+                            prose-li:text-[var(--text-secondary)]
                         ">
                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{page.content}</ReactMarkdown>
                     </div>
 
-                    <div className="border-t border-slate-800 pt-6 flex flex-wrap items-center gap-3">
+                    <div className="border-t border-[var(--border)] pt-6 flex flex-wrap items-center gap-3">
                         <Link
                             href="/wiki"
-                            className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white border border-slate-600 rounded hover:border-slate-400 transition"
+                            className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)] rounded hover:border-[var(--accent)] transition"
                         >
                             ← Back to wiki
                         </Link>
