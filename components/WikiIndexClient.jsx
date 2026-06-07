@@ -8,9 +8,14 @@ import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 
 /* ─── Recursive sidebar category link ─── */
-function SidebarCategory({ cat, activeCategory, onSelect, depth, canCreate, onDelete, onMove, onDrop }) {
+function SidebarCategory({ cat, activeCategory, onSelect, depth, canCreate, onDelete, onMove, onDrop, expanded, onToggle }) {
     const indent = depth * 12;
     const [dragOver, setDragOver] = useState(false);
+    const isExpanded = expanded === cat.name;
+    const hasPages = cat.pages?.length > 0;
+    const hasChildren = cat.children?.length > 0;
+    const hasContent = hasPages || hasChildren;
+    const isActive = activeCategory === cat.name;
 
     function handleDragStart(e) {
         e.dataTransfer.setData("text/plain", cat.name);
@@ -39,7 +44,7 @@ function SidebarCategory({ cat, activeCategory, onSelect, depth, canCreate, onDe
     return (
         <>
             <div
-                className={`group flex items-center transition-colors ${dragOver ? "bg-violet-500/10 rounded" : ""}`}
+                className={`group flex items-center transition-colors rounded-r-md ${dragOver ? "bg-violet-500/10" : ""} ${isExpanded ? "bg-slate-900/50" : ""}`}
                 draggable={canCreate}
                 onDragStart={canCreate ? handleDragStart : undefined}
                 onDragOver={canCreate ? handleDragOver : undefined}
@@ -54,17 +59,28 @@ function SidebarCategory({ cat, activeCategory, onSelect, depth, canCreate, onDe
                         ⋮⋮
                     </span>
                 )}
+                {/* Expand chevron */}
+                {hasContent && (
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onToggle(cat.name); }}
+                        className={`flex-shrink-0 w-4 h-4 flex items-center justify-center transition text-[10px] leading-none ml-0.5 ${isExpanded ? "text-violet-400" : "text-slate-500 hover:text-slate-300"}`}
+                    >
+                        {isExpanded ? "▼" : "▶"}
+                    </button>
+                )}
+                {!hasContent && <span className="w-4 flex-shrink-0" />}
                 <button
                     type="button"
-                    onClick={() => onSelect(cat.name)}
-                    style={{ paddingLeft: canCreate ? 4 : (12 + indent) }}
-                    className={`block flex-1 py-2 pr-3 text-left text-sm transition border-l-2 ${activeCategory === cat.name
+                    onClick={() => hasContent ? onToggle(cat.name) : onSelect(cat.name)}
+                    style={{ paddingLeft: 4 }}
+                    className={`block flex-1 py-2 pr-3 text-left text-sm transition border-l-2 ${isActive
                         ? "font-semibold text-white border-violet-500"
                         : "text-slate-400 hover:text-slate-200 border-transparent"
                         }`}
                 >
                     {cat.name}
-                    {cat.pages.length > 0 && (
+                    {hasPages && (
                         <span className="ml-1 text-xs text-slate-500">({cat.pages.length})</span>
                     )}
                 </button>
@@ -97,7 +113,21 @@ function SidebarCategory({ cat, activeCategory, onSelect, depth, canCreate, onDe
                     </span>
                 )}
             </div>
-            {cat.children?.map((child) => (
+
+            {/* Expanded: show page links */}
+            {isExpanded && hasPages && cat.pages.map((page) => (
+                <Link
+                    key={page.slug}
+                    href={`/wiki/${page.slug}`}
+                    style={{ paddingLeft: 36 + indent }}
+                    className="block py-1.5 pr-3 text-sm text-slate-400 hover:text-violet-300 hover:bg-slate-900/30 transition border-l-2 border-transparent hover:border-violet-500/30 truncate rounded-r-md"
+                >
+                    {page.title}
+                </Link>
+            ))}
+
+            {/* Children — only visible when expanded */}
+            {isExpanded && cat.children?.map((child) => (
                 <SidebarCategory
                     key={child.name}
                     cat={child}
@@ -108,6 +138,8 @@ function SidebarCategory({ cat, activeCategory, onSelect, depth, canCreate, onDe
                     onDelete={onDelete}
                     onMove={onMove}
                     onDrop={onDrop}
+                    expanded={expanded}
+                    onToggle={onToggle}
                 />
             ))}
         </>
@@ -193,6 +225,11 @@ export default function WikiIndexClient() {
     const [newCategoryParent, setNewCategoryParent] = useState("");
     const [addingCategory, setAddingCategory] = useState(false);
     const [categoryMsg, setCategoryMsg] = useState(null);
+    const [expandedCategory, setExpandedCategory] = useState(null);
+
+    function toggleExpand(name) {
+        setExpandedCategory((prev) => (prev === name ? null : name));
+    }
 
     useEffect(() => {
         async function load() {
@@ -384,16 +421,15 @@ export default function WikiIndexClient() {
                         <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
                             Navigation
                         </p>
-                        <button
-                            type="button"
-                            onClick={() => { setActiveCategory("all"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                        <Link
+                            href="/wiki"
                             className={`block w-full px-3 py-2 text-left text-sm transition border-l-2 ${activeCategory === "all"
                                 ? "font-semibold text-white border-violet-500"
                                 : "text-slate-400 hover:text-slate-200 border-transparent"
                                 }`}
                         >
                             Home
-                        </button>
+                        </Link>
                         {categories.map((cat) => (
                             <SidebarCategory
                                 key={cat.name}
@@ -405,6 +441,8 @@ export default function WikiIndexClient() {
                                 onDelete={handleDeleteCategory}
                                 onMove={handleMoveCategory}
                                 onDrop={handleDropCategory}
+                                expanded={expandedCategory}
+                                onToggle={toggleExpand}
                             />
                         ))}
                     </nav>
