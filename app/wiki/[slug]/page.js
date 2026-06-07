@@ -1,6 +1,6 @@
 import Link from "next/link";
 import PageShell from "@/components/PageShell";
-import WikiSidebar from "@/components/WikiSidebar";
+import WikiNavbar from "@/components/WikiNavbar";
 import { getWikiPageBySlug } from "@/lib/wiki";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
@@ -18,8 +18,8 @@ export default async function WikiSlugPage({ params }) {
 
     return (
         <PageShell>
-            <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-                <WikiSidebar currentCategory={page.category} currentSlug={page.slug} />
+            <div className="space-y-6">
+                <WikiNavbar currentCategory={page.category} currentSlug={page.slug} />
 
                 <main className="space-y-8">
                     <article>

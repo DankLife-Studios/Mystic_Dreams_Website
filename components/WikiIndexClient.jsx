@@ -6,6 +6,7 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
+import WikiNavbar from "./WikiNavbar";
 
 /* ─── Recursive sidebar category link ─── */
 function SidebarCategory({ cat, activeCategory, onSelect, depth, canCreate, onDelete, onMove, onDrop, expanded, onToggle }) {
@@ -413,96 +414,8 @@ export default function WikiIndexClient() {
     );
 
     return (
-        <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-            {/* ── Sidebar ── */}
-            <aside className="hidden lg:block">
-                <div className="sticky top-24 space-y-6">
-                    <nav className="space-y-0.5">
-                        <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            Navigation
-                        </p>
-                        <Link
-                            href="/wiki"
-                            className={`block w-full px-3 py-2 text-left text-sm transition border-l-2 ${activeCategory === "all"
-                                ? "font-semibold text-white border-violet-500"
-                                : "text-slate-400 hover:text-slate-200 border-transparent"
-                                }`}
-                        >
-                            Home
-                        </Link>
-                        {categories.map((cat) => (
-                            <SidebarCategory
-                                key={cat.name}
-                                cat={cat}
-                                activeCategory={activeCategory}
-                                onSelect={setActiveCategory}
-                                depth={0}
-                                canCreate={canCreate}
-                                onDelete={handleDeleteCategory}
-                                onMove={handleMoveCategory}
-                                onDrop={handleDropCategory}
-                                expanded={expandedCategory}
-                                onToggle={toggleExpand}
-                            />
-                        ))}
-                    </nav>
-
-                    {/* Search */}
-                    <div className="bg-slate-900/50 border border-slate-700 rounded-lg px-3 py-2">
-                        <input
-                            value={searchQuery}
-                            onChange={(event) => setSearchQuery(event.target.value)}
-                            className="w-full bg-transparent text-xs text-white outline-none placeholder-slate-500"
-                            placeholder="Search articles…"
-                        />
-                    </div>
-
-                    {canCreate && (
-                        <div className="border-t border-slate-800 pt-4 space-y-3">
-                            <form onSubmit={handleAddCategory} className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                                    Add Category
-                                </p>
-                                <input
-                                    value={newCategoryName}
-                                    onChange={(e) => setNewCategoryName(e.target.value)}
-                                    placeholder="Category name…"
-                                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500 transition placeholder-slate-500"
-                                />
-                                <select
-                                    value={newCategoryParent}
-                                    onChange={(e) => setNewCategoryParent(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500 transition"
-                                >
-                                    <option value="">Top level (no parent)</option>
-                                    {topLevelCats.map((cat) => (
-                                        <option key={cat.name} value={cat.name}>
-                                            {cat.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                <button
-                                    type="submit"
-                                    disabled={addingCategory || !newCategoryName.trim()}
-                                    className="w-full px-2 py-1.5 text-xs font-medium border border-violet-500 text-violet-400 bg-transparent rounded hover:bg-violet-500/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {addingCategory ? "Adding…" : "Add Category"}
-                                </button>
-                            </form>
-                            {categoryMsg && (
-                                <p className="text-xs text-rose-400">{categoryMsg}</p>
-                            )}
-
-                            <Link
-                                href="/wiki/new"
-                                className="block rounded-lg border border-violet-500 text-violet-400 bg-transparent px-3 py-2 text-center text-xs font-medium transition hover:bg-violet-500/10"
-                            >
-                                + Create new article
-                            </Link>
-                        </div>
-                    )}
-                </div>
-            </aside>
+        <div className="space-y-6">
+            <WikiNavbar />
 
             {/* ── Main content ── */}
             <main className="space-y-10 min-w-0">
