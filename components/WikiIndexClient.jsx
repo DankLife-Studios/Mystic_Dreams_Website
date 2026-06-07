@@ -6,7 +6,6 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
-import WikiNavbar from "./WikiNavbar";
 
 /* ─── Recursive sidebar category link ─── */
 function SidebarCategory({ cat, activeCategory, onSelect, depth, canCreate, onDelete, onMove, onDrop, expanded, onToggle }) {
@@ -414,14 +413,10 @@ export default function WikiIndexClient() {
     );
 
     return (
-        <div className="space-y-6">
-            <WikiNavbar />
-
-            {/* ── Main content ── */}
-            <main className="space-y-10 min-w-0">
-                {/* Home Page */}
-                {homePage && (
-                    <div className="prose prose-invert max-w-none
+        <main className="space-y-10 min-w-0">
+            {/* Home Page */}
+            {homePage && (
+                <div className="prose prose-invert max-w-none
                         prose-headings:text-white prose-headings:font-serif prose-headings:tracking-tight
                         prose-h1:text-4xl prose-h2:text-2xl prose-h2:mt-10 prose-h3:text-xl
                         prose-a:text-violet-400 prose-a:no-underline hover:prose-a:underline
@@ -433,90 +428,89 @@ export default function WikiIndexClient() {
                         prose-blockquote:border-violet-500 prose-blockquote:not-italic
                         prose-li:text-slate-200
                     ">
-                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
-                            {homePage.content}
-                        </ReactMarkdown>
-                        {homePage.updated_at && (
-                            <p className="mt-6 text-sm text-slate-500">
-                                Last updated: {new Date(homePage.updated_at).toLocaleDateString()}
-                            </p>
-                        )}
-                    </div>
-                )}
-
-                {/* Divider + Stats */}
-                <div className="space-y-4 border-t border-slate-800 pt-8">
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
-                        <span>{totalPages} articles</span>
-                        <span>·</span>
-                        <span>{allFlatCats.length} categories</span>
-                        {homePage && (
-                            <>
-                                <span>·</span>
-                                <Link
-                                    href={`/wiki/${homePage.slug}/edit`}
-                                    className="text-violet-400 hover:text-violet-300 transition"
-                                >
-                                    Edit homepage
-                                </Link>
-                            </>
-                        )}
-                        {canCreate && (
-                            <>
-                                <span>·</span>
-                                <Link href="/wiki/new" className="text-violet-400 hover:text-violet-300 transition">
-                                    Write an article
-                                </Link>
-                            </>
-                        )}
-                    </div>
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                        {homePage.content}
+                    </ReactMarkdown>
+                    {homePage.updated_at && (
+                        <p className="mt-6 text-sm text-slate-500">
+                            Last updated: {new Date(homePage.updated_at).toLocaleDateString()}
+                        </p>
+                    )}
                 </div>
+            )}
 
-                {error && (
-                    <div className="border border-rose-600 bg-rose-950/20 px-4 py-3 rounded text-rose-200 text-sm">
-                        Error loading wiki: {error}
-                    </div>
-                )}
+            {/* Divider + Stats */}
+            <div className="space-y-4 border-t border-slate-800 pt-8">
+                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
+                    <span>{totalPages} articles</span>
+                    <span>·</span>
+                    <span>{allFlatCats.length} categories</span>
+                    {homePage && (
+                        <>
+                            <span>·</span>
+                            <Link
+                                href={`/wiki/${homePage.slug}/edit`}
+                                className="text-violet-400 hover:text-violet-300 transition"
+                            >
+                                Edit homepage
+                            </Link>
+                        </>
+                    )}
+                    {canCreate && (
+                        <>
+                            <span>·</span>
+                            <Link href="/wiki/new" className="text-violet-400 hover:text-violet-300 transition">
+                                Write an article
+                            </Link>
+                        </>
+                    )}
+                </div>
+            </div>
 
-                {loading && <div className="text-slate-400">Loading wiki index…</div>}
+            {error && (
+                <div className="border border-rose-600 bg-rose-950/20 px-4 py-3 rounded text-rose-200 text-sm">
+                    Error loading wiki: {error}
+                </div>
+            )}
 
-                {!loading && !error && (
-                    <div className="space-y-8">
-                        {allFlatCats.length === 0 && !searchQuery && (
+            {loading && <div className="text-slate-400">Loading wiki index…</div>}
+
+            {!loading && !error && (
+                <div className="space-y-8">
+                    {allFlatCats.length === 0 && !searchQuery && (
+                        <div className="text-slate-400 text-sm">
+                            No categories yet. Editors can add categories using the sidebar.
+                        </div>
+                    )}
+
+                    {categories.map((cat) => (
+                        <CategorySection
+                            key={cat.name}
+                            cat={cat}
+                            searchQuery={searchQuery}
+                            depth={0}
+                        />
+                    ))}
+
+                    {allFlatCats.length > 0 &&
+                        categories.every((cat) => {
+                            const q = searchQuery.trim().toLowerCase();
+                            const hasPages = cat.pages.some(
+                                (p) =>
+                                    !q ||
+                                    p.title.toLowerCase().includes(q) ||
+                                    p.slug.toLowerCase().includes(q)
+                            );
+                            const hasKids = cat.children && cat.children.length > 0;
+                            return !hasPages && !hasKids;
+                        }) &&
+                        searchQuery && (
                             <div className="text-slate-400 text-sm">
-                                No categories yet. Editors can add categories using the sidebar.
+                                No articles match that search.
                             </div>
                         )}
-
-                        {categories.map((cat) => (
-                            <CategorySection
-                                key={cat.name}
-                                cat={cat}
-                                searchQuery={searchQuery}
-                                depth={0}
-                            />
-                        ))}
-
-                        {allFlatCats.length > 0 &&
-                            categories.every((cat) => {
-                                const q = searchQuery.trim().toLowerCase();
-                                const hasPages = cat.pages.some(
-                                    (p) =>
-                                        !q ||
-                                        p.title.toLowerCase().includes(q) ||
-                                        p.slug.toLowerCase().includes(q)
-                                );
-                                const hasKids = cat.children && cat.children.length > 0;
-                                return !hasPages && !hasKids;
-                            }) &&
-                            searchQuery && (
-                                <div className="text-slate-400 text-sm">
-                                    No articles match that search.
-                                </div>
-                            )}
-                    </div>
-                )}
-            </main>
-        </div>
+                </div>
+            )}
+        </main>
     );
 }
