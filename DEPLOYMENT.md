@@ -1,21 +1,23 @@
 # Mystic Dreams Website — Deployment Checklist
 
-## 1. Discord Application
+## 1. Discord application
 
-1. Create an application at [Discord Developer Portal](https://discord.com/developers/applications).
-2. **OAuth2** → Redirects:
-   - `http://localhost:3000/api/auth/callback/discord`
-   - `https://YOUR_DOMAIN/api/auth/callback/discord`
-3. Copy **Client ID** and **Client Secret** to Vercel env.
-4. **Bot** → Enable **Server Members Intent** → invite bot to your guild with `guilds.members.read`.
-5. Copy **Bot Token** to `DISCORD_BOT_TOKEN` (never commit).
+1. Configure Discord OAuth redirects for local development and the production domain.
+2. Set `AUTH_DISCORD_ID`, `AUTH_DISCORD_SECRET`, `AUTH_SECRET`, and `AUTH_URL`.
+3. Configure the bot token and guild ID used for membership/role checks.
+4. Set `DISCORD_CITIZEN_ROLE_ID` for whitelist status.
+5. Set website staff permissions with comma-separated role IDs:
+   - `DISCORD_STAFF_ROLE_IDS` — Website Administration, City Directory management, staff character search.
+   - `DISCORD_WIKI_EDITOR_ROLE_IDS` — create/edit wiki drafts and submit them for review.
+   - `DISCORD_WIKI_REVIEWER_ROLE_IDS` — approve/publish reviewed wiki articles.
 
-## 2. MySQL (read-only user — game server data)
+`DISCORD_WIKI_EDITOR_ROLE_ID` remains supported as a legacy single-role fallback.
 
-On your database host:
+## 2. MySQL — read-only game data
+
+Use a dedicated read-only account. The current website reads these Qbox tables:
 
 ```sql
-CREATE USER 'mystic_web_readonly'@'%' IDENTIFIED BY 'STRONG_PASSWORD';
 GRANT SELECT ON mystic_dreams.users TO 'mystic_web_readonly'@'%';
 GRANT SELECT ON mystic_dreams.players TO 'mystic_web_readonly'@'%';
 GRANT SELECT ON mystic_dreams.player_groups TO 'mystic_web_readonly'@'%';
@@ -24,59 +26,51 @@ GRANT SELECT ON mystic_dreams.player_vehicles TO 'mystic_web_readonly'@'%';
 FLUSH PRIVILEGES;
 ```
 
-Set `DATABASE_URL=mysql://mystic_web_readonly:PASSWORD@HOST/mystic_dreams`
+Set `DATABASE_URL=mysql://mystic_web_readonly:PASSWORD@HOST/mystic_dreams`.
 
-**Firewall:** Vercel serverless uses dynamic IPs. Use [Vercel Static IPs](https://vercel.com/docs/connectivity/static-ips) (Pro) or allow the required egress range for your host.
+**Do not grant INSERT, UPDATE, DELETE, or schema permissions to the website account.** Staff character search remains read-only.
 
-## 2b. Turso (libSQL — wiki & serverless data)
+> Housing/property information is intentionally not queried until the exact housing resource/table is documented and explicitly added to the read-only grant.
 
-The wiki uses Turso, a serverless SQLite-compatible database that works on Vercel's ephemeral filesystem.
+## 3. Turso — website-managed content
 
-```bash
-# Install Turso CLI: https://docs.turso.tech/cli/installation
-turso auth signup
-turso db create database-mystic-website
+Set:
 
-# Get the connection URL:
-turso db show database-mystic-website --url
+- `TURSO_DATABASE_URL`
+- `TURSO_AUTH_TOKEN`
 
-# Create an auth token for the website:
-turso db tokens create database-mystic-website
-```
+The app auto-creates/migrates:
 
-Set in Vercel environment variables:
-- `TURSO_DATABASE_URL=libsql://database-mystic-website-XXXX.turso.io`
-- `TURSO_AUTH_TOKEN=` (the token from above)
+- Wiki pages/categories and Draft → Review → Published workflow fields.
+- City Directory website metadata (description, logo, phone, hours, services, hiring status, featured state).
 
-The wiki schema auto-creates on first request — no manual migration needed.
+Existing wiki rows are preserved and migrate as Published.
 
-## 3. Vercel
+## 4. Vercel
 
-1. Import `DankLife-Studios/Mystic_Dreams_Website`, branch `Live`.
-2. Framework: **Next.js**.
+1. Import the production repository/branch.
+2. Framework: Next.js.
 3. Add all variables from `.env.example`.
-4. Set `AUTH_URL` and `NEXT_PUBLIC_SITE_URL` to your production URL.
-5. Generate `AUTH_SECRET`: `openssl rand -base64 32`
+4. Set production `AUTH_URL` and `NEXT_PUBLIC_SITE_URL`.
+5. Generate a secure `AUTH_SECRET`.
+6. Ensure the database host accepts Vercel egress traffic using the network approach appropriate to the deployment plan.
 
-## 4. Post-deploy (FiveM)
+## 5. Post-deploy FiveM links
 
-- Update pause menu website URL in `qbx_core/config/client.lua`.
-- Uncomment Mystic_Queue website button with your Vercel URL.
-- Fix `qbx:discordLink` in `server.cfg` to `discord.gg/wtJNvB3bSK`.
-
-## 5. Vehicle display names (optional)
-
-Dashboard vehicle titles use Qbox `vehicles.lua` labels. After adding custom cars on the server, regenerate and commit:
-
-```bash
-npm run generate:vehicles
-# or: node scripts/generate-vehicle-labels.mjs "F:/path/to/qbx_core/shared/vehicles.lua"
-```
+Update any FiveM resources that point players to the main website so they use the production Mystic Dreams website URL.
 
 ## 6. Verify
 
-- [ ] Public pages load (Home, Features, Whitelist, Connect)
-- [ ] Light/dark theme persists
-- [ ] Discord login works
-- [ ] Guild + Citizen role badges show correctly
-- [ ] Characters appear after linking via first FiveM connect
+- [ ] Home is centered on desktop and mobile.
+- [ ] Light/dark theme persists.
+- [ ] Sidebar is present and Showcase opens in a new tab.
+- [ ] `/features` redirects to `/about`.
+- [ ] Wiki reads work without signing in.
+- [ ] Wiki search finds title/category/summary/tags/content matches.
+- [ ] New wiki pages start as Draft and can move through Review to Published.
+- [ ] Discord login works.
+- [ ] Character dashboard shows only the signed-in player's linked characters.
+- [ ] Expanded character identity/job/gang/finance/license/status/vehicle information renders when available.
+- [ ] City Directory remains login-only and combines Qbox ownership with Turso website metadata.
+- [ ] `/admin` is denied to non-staff/non-editor accounts.
+- [ ] Staff character search works without any write permission to the game database.

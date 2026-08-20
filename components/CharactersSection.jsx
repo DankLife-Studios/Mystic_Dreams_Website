@@ -1,69 +1,95 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import CharacterCard from "./CharacterCard";
+
+const SECTIONS = [
+  { id: "overview", label: "Overview" },
+  { id: "employment", label: "Employment" },
+  { id: "licenses", label: "Licenses" },
+  { id: "vehicles", label: "Vehicles" },
+];
 
 export default function CharactersSection({ characters }) {
   const [activeCid, setActiveCid] = useState(
     () => characters[0]?.citizenid ?? null
   );
+  const [section, setSection] = useState("overview");
 
-  if (!characters?.length) return null;
-
+  const list = characters || [];
   const active =
-    characters.find((c) => c.citizenid === activeCid) ?? characters[0];
+    list.find((character) => character.citizenid === activeCid) ??
+    list[0] ?? null;
 
-  const vehicleCount = (active.vehicles || []).length;
+  useEffect(() => {
+    setSection("overview");
+  }, [activeCid]);
+
+  const totalVehicles = useMemo(
+    () => list.reduce((sum, character) => sum + (character.vehicles?.length || 0), 0),
+    [list]
+  );
+
+  if (!active) return null;
 
   return (
     <section aria-labelledby="characters-heading">
       <div className="dashboard-overview">
         <div className="dashboard-overview-cell">
-          <p className="text-caption text-[10px] uppercase tracking-wide">
-            Characters
-          </p>
+          <p className="text-caption text-[10px] uppercase tracking-wide">Characters</p>
           <p className="text-heading font-display mt-1 text-2xl font-semibold tabular-nums">
-            {characters.length}
+            {list.length}
           </p>
         </div>
         <div className="dashboard-overview-cell">
-          <p className="text-caption text-[10px] uppercase tracking-wide">
-            Vehicles
-          </p>
+          <p className="text-caption text-[10px] uppercase tracking-wide">Vehicles</p>
           <p className="text-heading font-display mt-1 text-2xl font-semibold tabular-nums">
-            {vehicleCount}
+            {totalVehicles}
           </p>
         </div>
         <div className="dashboard-overview-cell">
-          <p className="text-caption text-[10px] uppercase tracking-wide">
-            Active slot
-          </p>
+          <p className="text-caption text-[10px] uppercase tracking-wide">Active slot</p>
           <p className="text-heading font-display mt-1 text-2xl font-semibold tabular-nums">
             {active.cid}
           </p>
         </div>
       </div>
 
-      {characters.length > 1 && (
+      {list.length > 1 && (
         <div className="dash-slot-tabs" role="tablist" aria-label="Character slots">
-          {characters.map((char) => (
+          {list.map((character) => (
             <button
-              key={char.citizenid}
+              key={character.citizenid}
               type="button"
               role="tab"
-              aria-selected={char.citizenid === active.citizenid}
-              onClick={() => setActiveCid(char.citizenid)}
+              aria-selected={character.citizenid === active.citizenid}
+              onClick={() => setActiveCid(character.citizenid)}
               className={`dash-slot-tab ${
-                char.citizenid === active.citizenid ? "dash-slot-tab-active" : ""
+                character.citizenid === active.citizenid ? "dash-slot-tab-active" : ""
               }`}
             >
-              {char.characterName || char.name || `Slot ${char.cid}`}
+              {character.characterName || character.name || `Slot ${character.cid}`}
             </button>
           ))}
         </div>
       )}
 
-      <CharacterCard character={active} />
+      <div className="dash-profile-tabs" role="tablist" aria-label="Character information">
+        {SECTIONS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={section === item.id}
+            onClick={() => setSection(item.id)}
+            className={`dash-profile-tab ${section === item.id ? "dash-profile-tab-active" : ""}`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      <CharacterCard character={active} section={section} />
     </section>
   );
 }

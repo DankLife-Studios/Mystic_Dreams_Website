@@ -6,151 +6,55 @@ import Link from "next/link";
 import WikiMarkdownEditor from "./WikiMarkdownEditor";
 
 export default function WikiCreateClient() {
-    const router = useRouter();
-    const [title, setTitle] = useState("");
-    const [slug, setSlug] = useState("");
-    const [category, setCategory] = useState("General");
-    const [content, setContent] = useState("");
-    const [saving, setSaving] = useState(false);
-    const [message, setMessage] = useState(null);
-    const [categories, setCategories] = useState([]);
-    const [categoriesLoading, setCategoriesLoading] = useState(true);
-    const [isHomepage, setIsHomepage] = useState(false);
+  const router = useRouter();
+  const [form, setForm] = useState({ title: "", slug: "", category: "Getting Started", summary: "", tags: "", content: "", isHomepage: false });
+  const [categories, setCategories] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState(null);
 
-    useEffect(() => {
-        async function loadCategories() {
-            try {
-                const res = await fetch("/api/wiki");
-                if (res.ok) {
-                    const data = await res.json();
-                    setCategories(data.categories || []);
-                }
-            } catch {
-                // Silently fail — user can still type a category
-            } finally {
-                setCategoriesLoading(false);
-            }
-        }
-        loadCategories();
-    }, []);
+  useEffect(() => {
+    fetch("/api/wiki/categories").then((res) => res.json()).then((body) => setCategories(body.categories || [])).catch(() => {});
+  }, []);
 
-    async function handleSubmit(event) {
-        event.preventDefault();
-        setSaving(true);
-        setMessage(null);
+  const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
 
-        try {
-            const res = await fetch("/api/wiki", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title, slug, category, content, isHomepage }),
-            });
-
-            if (!res.ok) {
-                const body = await res.json().catch(() => ({}));
-                throw new Error(body.error || "Failed to create page");
-            }
-
-            const page = await res.json();
-            router.push(`/wiki/${page.slug}`);
-        } catch (err) {
-            setMessage(err.message);
-        } finally {
-            setSaving(false);
-        }
+  async function submit(event) {
+    event.preventDefault();
+    setSaving(true);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/wiki", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, tags: form.tags.split(",").map((tag) => tag.trim()).filter(Boolean) }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Failed to create article");
+      router.push(`/wiki/${body.slug}/edit`);
+      router.refresh();
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setSaving(false);
     }
+  }
 
-    return (
-        <div className="max-w-5xl mx-auto space-y-8">
-            <div className="space-y-4 border-b border-slate-800 pb-8">
-                <h1 className="text-5xl font-serif font-bold tracking-tight text-white">Create wiki article</h1>
-                <p className="text-lg text-slate-300">
-                    Build a new entry for the Mystic Dreams wiki. Use a clear title and category to keep articles organized.
-                </p>
-                <Link href="/wiki" className="text-violet-400 hover:text-violet-300 transition text-sm">
-                    ← Back to wiki
-                </Link>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid gap-6 sm:grid-cols-2">
-                    <div>
-                        <label className="block text-sm font-semibold text-white mb-2">Title</label>
-                        <input
-                            value={title}
-                            onChange={(event) => setTitle(event.target.value)}
-                            required
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-white outline-none focus:border-violet-500 transition"
-                            placeholder="Article title"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-semibold text-white mb-2">Slug (optional)</label>
-                        <input
-                            value={slug}
-                            onChange={(event) => setSlug(event.target.value)}
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-white outline-none focus:border-violet-500 transition"
-                            placeholder="article-slug"
-                        />
-                        <p className="text-xs text-slate-500 mt-1">Leave blank to auto-generate from title</p>
-                    </div>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-semibold text-white mb-2">Category</label>
-                    <div className="relative">
-                        <input
-                            value={category}
-                            onChange={(event) => setCategory(event.target.value)}
-                            list="wiki-categories"
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-white outline-none focus:border-violet-500 transition"
-                            placeholder="General"
-                        />
-                        <datalist id="wiki-categories">
-                            {categories.map((cat) => (
-                                <option key={cat.name} value={cat.name} />
-                            ))}
-                        </datalist>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">
-                        {categoriesLoading
-                            ? "Loading categories…"
-                            : `${categories.length} categories available — type a new one to create on the fly`}
-                    </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={isHomepage}
-                            onChange={(e) => setIsHomepage(e.target.checked)}
-                            className="sr-only peer"
-                        />
-                        <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none peer-focus:ring-1 peer-focus:ring-violet-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-500"></div>
-                        <span className="ml-3 text-sm font-medium text-slate-300">
-                            Set as wiki homepage
-                        </span>
-                    </label>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-semibold text-white mb-2">Content</label>
-                    <WikiMarkdownEditor value={content} onChange={setContent} />
-                </div>
-
-                <div className="flex items-center justify-between">
-                    {message && <p className="text-sm text-rose-300">{message}</p>}
-                    <button
-                        type="submit"
-                        disabled={saving}
-                        className="ml-auto px-5 py-2.5 text-sm font-medium border border-violet-500 text-violet-400 bg-transparent rounded-lg hover:bg-violet-500/10 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                        {saving ? "Creating..." : "Create article"}
-                    </button>
-                </div>
-            </form>
+  return (
+    <div className="wiki-editor-shell">
+      <header className="wiki-editor-header"><div><p className="eyebrow">Wiki staff</p><h1>Create article</h1><p>New articles are saved as drafts. Submit them for review from Website Administration when they are ready.</p></div><Link href="/admin">← Staff tools</Link></header>
+      <form onSubmit={submit} className="wiki-editor-form">
+        <div className="wiki-editor-grid"><Field label="Title" required value={form.title} onChange={(value) => set("title", value)} placeholder="Article title" /><Field label="Slug" value={form.slug} onChange={(value) => set("slug", value)} placeholder="auto-generated-from-title" /></div>
+        <Field label="Summary" value={form.summary} onChange={(value) => set("summary", value)} placeholder="A short description shown in search results and related articles." />
+        <div className="wiki-editor-grid">
+          <label className="admin-field"><span>Category</span><input list="wiki-categories-create" value={form.category} onChange={(event) => set("category", event.target.value)} /><datalist id="wiki-categories-create">{categories.map((category) => <option key={category.name} value={category.name} />)}</datalist></label>
+          <Field label="Tags" value={form.tags} onChange={(value) => set("tags", value)} placeholder="getting started, vehicles, jobs" />
         </div>
-    );
+        <label className="admin-check"><input type="checkbox" checked={form.isHomepage} onChange={(event) => set("isHomepage", event.target.checked)} /> Set as wiki homepage</label>
+        <div className="wiki-editor-content"><div className="wiki-editor-content-head"><div><span>Article content</span><small>Markdown + rich wiki blocks</small></div><details><summary>Rich content syntax</summary><p>Gallery: fenced code block with language <code>gallery</code> and one image URL per line. YouTube: fenced code block with language <code>youtube</code> and a video URL/ID. Button: normal Markdown link with title <code>"button"</code>.</p></details></div><WikiMarkdownEditor value={form.content} onChange={(value) => set("content", value)} /></div>
+        <div className="wiki-editor-footer">{message && <p className="admin-error">{message}</p>}<button type="submit" disabled={saving} className="btn-primary">{saving ? "Saving draft…" : "Create draft"}</button></div>
+      </form>
+    </div>
+  );
 }
+
+function Field({ label, value, onChange, ...props }) { return <label className="admin-field"><span>{label}</span><input value={value} onChange={(event) => onChange(event.target.value)} {...props} /></label>; }

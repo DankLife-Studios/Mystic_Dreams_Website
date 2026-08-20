@@ -1,69 +1,52 @@
 import Link from "next/link";
-import PageShell from "@/components/PageShell";
-import { getWikiPageBySlug } from "@/lib/wiki";
 import { notFound } from "next/navigation";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkBreaks from "remark-breaks";
+import { auth } from "@/lib/auth";
+import { getSitePermissions } from "@/lib/discord";
+import { getWikiArticleContext } from "@/lib/wiki";
+import PageShell from "@/components/PageShell";
+import WikiArticle, { getArticleHeadings } from "@/components/WikiArticle";
 
 export const dynamic = "force-dynamic";
 
-export default async function WikiSlugPage({ params }) {
-    const { slug } = await params;
-    const page = await getWikiPageBySlug(slug);
-    if (!page) {
-        return notFound();
-    }
+export default async function WikiArticlePage({ params }) {
+  const { slug } = await params;
+  const context = await getWikiArticleContext(slug);
+  if (!context) notFound();
 
-    return (
-        <PageShell>
-            <main className="space-y-8">
-                <article>
-                    <div className="space-y-4 border-b border-[var(--border)] pb-6">
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--text-muted)]">
-                            <Link href="/wiki" className="hover:text-[var(--text-primary)] transition">Wiki</Link>
-                            <span>/</span>
-                            <Link href="/wiki" className="hover:text-[var(--text-primary)] transition">{page.category}</Link>
-                        </div>
-                        <h1 className="text-5xl font-serif font-bold tracking-tight text-[var(--text-primary)]">{page.title}</h1>
-                        <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--text-muted)]">
-                            <span className="px-2 py-1 bg-[var(--surface-muted)] rounded text-[var(--text-secondary)]">Category: {page.category}</span>
-                            <span>Updated {new Date(page.updated_at).toLocaleDateString()}</span>
-                        </div>
-                    </div>
+  const { page, previous, next, related } = context;
+  const headings = getArticleHeadings(page.content);
+  const session = await auth();
+  const permissions = session?.user?.discordId ? await getSitePermissions(session.user.discordId) : null;
 
-                    <div className="prose max-w-none py-8
-                            prose-headings:text-[var(--text-primary)] prose-headings:font-serif prose-headings:tracking-tight
-                            prose-h1:text-4xl prose-h2:text-2xl prose-h2:mt-10 prose-h3:text-xl
-                            prose-a:text-[var(--accent)] prose-a:no-underline hover:prose-a:underline
-                            prose-strong:text-[var(--text-primary)]
-                            prose-code:before:content-none prose-code:after:content-none
-                            prose-pre:border prose-pre:border-[var(--border)] prose-pre:rounded-xl
-                            prose-img:rounded-xl prose-img:shadow-lg
-                            prose-hr:border-[var(--border)]
-                            prose-blockquote:border-[var(--accent)] prose-blockquote:not-italic
-                            prose-p:text-[var(--text-secondary)]
-                            prose-li:text-[var(--text-secondary)]
-                        ">
-                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{page.content}</ReactMarkdown>
-                    </div>
+  return (
+    <PageShell>
+      <div className="wiki-article-shell">
+        <article className="wiki-article-main">
+          <nav className="wiki-breadcrumb" aria-label="Breadcrumb">
+            <Link href="/wiki">Wiki</Link><i className="fa-regular fa-chevron-right" /><span>{page.category}</span><i className="fa-regular fa-chevron-right" /><span>{page.title}</span>
+          </nav>
+          <header className="wiki-article-header">
+            <span className="wiki-article-category">{page.category}</span>
+            <h1>{page.title}</h1>
+            {page.summary && <p>{page.summary}</p>}
+            <div className="wiki-article-meta"><span>Updated {new Date(page.updated_at).toLocaleDateString()}</span>{page.tags?.map((tag) => <span key={tag}>#{tag}</span>)}</div>
+          </header>
 
-                    <div className="border-t border-[var(--border)] pt-6 flex flex-wrap items-center gap-3">
-                        <Link
-                            href="/wiki"
-                            className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)] rounded hover:border-[var(--accent)] transition"
-                        >
-                            ← Back to wiki
-                        </Link>
-                        <Link
-                            href={`/wiki/${page.slug}/edit`}
-                            className="px-4 py-2 text-sm font-medium border border-violet-500 text-violet-400 bg-transparent rounded hover:bg-violet-500/10 transition"
-                        >
-                            Edit this page
-                        </Link>
-                    </div>
-                </article>
-            </main>
-        </PageShell>
-    );
+          <WikiArticle content={page.content} />
+
+          <div className="wiki-article-pagination">
+            {previous ? <Link href={`/wiki/${previous.slug}`}><small>Previous</small><strong>← {previous.title}</strong></Link> : <span />}
+            {next ? <Link href={`/wiki/${next.slug}`}><small>Next</small><strong>{next.title} →</strong></Link> : <span />}
+          </div>
+
+          {related.length > 0 && <section className="wiki-related"><div className="wiki-section-heading"><div><span>Keep reading</span><h2>Related articles</h2></div></div><div>{related.map((item) => <Link key={item.slug} href={`/wiki/${item.slug}`}><span>{item.category}</span><strong>{item.title}</strong></Link>)}</div></section>}
+        </article>
+
+        <aside className="wiki-article-aside">
+          {headings.length > 0 && <div className="wiki-toc"><p>On this page</p>{headings.map((heading) => <a key={`${heading.id}-${heading.level}`} href={`#${heading.id}`} className={heading.level === 3 ? "wiki-toc-sub" : ""}>{heading.text}</a>)}</div>}
+          {permissions?.canEditWiki && <div className="wiki-editor-actions"><span>Staff editor</span><Link href={`/wiki/${page.slug}/edit`}>Edit article</Link><Link href="/admin">Review queue</Link></div>}
+        </aside>
+      </div>
+    </PageShell>
+  );
 }

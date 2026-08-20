@@ -1,24 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSession, signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import Icon from "./Icon";
 
-const CATEGORY_ACCENTS = {
-  restaurants: "city-dir-accent-restaurants",
-  law: "city-dir-accent-law",
-  mechanics: "city-dir-accent-mechanics",
-  dealership: "city-dir-accent-dealership",
-  other: "city-dir-accent-other",
-};
-
-const CATEGORY_ICONS = {
-  restaurants: "store",
-  law: "shield",
-  mechanics: "briefcase",
-  dealership: "car",
-  other: "building",
-};
+const CATEGORY_ICONS = { restaurants: "store", law: "shield", mechanics: "briefcase", dealership: "car", other: "building" };
 
 export default function CityInfoClient() {
   const { status } = useSession();
@@ -33,384 +19,119 @@ export default function CityInfoClient() {
       setLoading(false);
       return;
     }
-
-    async function load() {
-      try {
-        const res = await fetch("/api/city");
-        if (res.status === 401) {
-          setError("unauthorized");
-          return;
+    let active = true;
+    fetch("/api/city")
+      .then(async (response) => {
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          throw new Error(body.error || "Failed to load the City Directory");
         }
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error || "Failed to load city directory");
-        }
-        setData(await res.json());
-      } catch (e) {
-        setError(e.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    load();
+        return response.json();
+      })
+      .then((body) => active && setData(body))
+      .catch((err) => active && setError(err.message))
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
   }, [status]);
 
   const businesses = data?.businesses || [];
   const categories = data?.categories || [];
-
-  const stats = useMemo(() => {
-    const staffed = businesses.filter((b) => b.owners?.length > 0).length;
-    return {
-      total: businesses.length,
-      staffed,
-      vacant: businesses.length - staffed,
-    };
-  }, [businesses]);
-
-  const categoryCounts = useMemo(() => {
-    const counts = { all: businesses.length };
-    for (const cat of categories) {
-      counts[cat.id] = cat.businesses.length;
-    }
-    return counts;
-  }, [businesses, categories]);
-
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return businesses.filter((biz) => {
-      if (activeCategory !== "all" && biz.category !== activeCategory) {
-        return false;
-      }
-      if (!q) return true;
-      return (
-        biz.name.toLowerCase().includes(q) ||
-        biz.location.toLowerCase().includes(q) ||
-        biz.categoryLabel?.toLowerCase().includes(q) ||
-        biz.owners?.some((o) =>
-          o.characterName.toLowerCase().includes(q)
-        )
-      );
+    const term = query.trim().toLowerCase();
+    return businesses.filter((business) => {
+      if (activeCategory !== "all" && business.category !== activeCategory) return false;
+      if (!term) return true;
+      const haystack = [business.name, business.location, business.categoryLabel, business.description, business.phone, ...(business.services || []), ...(business.owners || []).map((owner) => owner.characterName)].filter(Boolean).join(" ").toLowerCase();
+      return haystack.includes(term);
     });
   }, [businesses, activeCategory, query]);
 
-  const sections = useMemo(() => {
-    const q = query.trim();
-    if (q) {
-      return filtered.length > 0
-        ? [{ id: "search", label: "Search results", businesses: filtered }]
-        : [];
-    }
-    if (activeCategory !== "all") {
-      const cat = categories.find((c) => c.id === activeCategory);
-      return filtered.length > 0 && cat
-        ? [{ ...cat, businesses: filtered }]
-        : [];
-    }
-    return categories
-      .map((cat) => ({
-        ...cat,
-        businesses: filtered.filter((b) => b.category === cat.id),
-      }))
-      .filter((cat) => cat.businesses.length > 0);
-  }, [filtered, categories, activeCategory, query]);
+  const stats = useMemo(() => ({
+    total: businesses.length,
+    operated: businesses.filter((business) => business.owners?.length).length,
+    hiring: businesses.filter((business) => business.hiringStatus === "hiring").length,
+  }), [businesses]);
 
-  if (status === "loading" || (status === "authenticated" && loading)) {
-    return <CitySkeleton />;
-  }
-
+  if (status === "loading" || (status === "authenticated" && loading)) return <CitySkeleton />;
   if (status === "unauthenticated") {
     return (
-      <div className="city-dir-login">
-        <span className="icon-box icon-box-xl mx-auto">
-          <Icon name="city" size="lg" />
-        </span>
-        <h1 className="text-heading font-display mt-6 text-2xl font-semibold">
-          City directory
-        </h1>
-        <p className="text-body mt-2 text-sm leading-relaxed">
-          Sign in with Discord to see businesses, locations, and who runs them
-          in Los Santos.
-        </p>
-        <button
-          type="button"
-          onClick={() => signIn("discord", { callbackUrl: "/city" })}
-          className="btn-primary mt-8 w-full"
-        >
-          Continue with Discord
-        </button>
+      <div className="city-directory-login">
+        <span className="city-seal"><Icon name="city" size="lg" /></span>
+        <p className="eyebrow">Los Santos public records</p>
+        <h1>Mystic Dreams City Directory</h1>
+        <p>Sign in with Discord to browse registered businesses, public departments, locations, ownership, services, and hiring information.</p>
+        <button type="button" className="btn-primary" onClick={() => signIn("discord", { callbackUrl: "/city" })}>Continue with Discord</button>
       </div>
     );
   }
-
-  if (error) {
-    return (
-      <div className="city-dir-alert city-dir-alert-error text-center">
-        <p className="font-medium text-red-400">{error}</p>
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className="btn-secondary mt-4"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  if (categories.length === 0) {
-    return (
-      <div className="city-dir-empty">
-        <span className="icon-box icon-box-lg mx-auto">
-          <Icon name="building" size="md" />
-        </span>
-        <p className="text-heading font-display mt-4 font-semibold">
-          No businesses configured
-        </p>
-      </div>
-    );
-  }
+  if (error) return <div className="city-directory-login"><h1>Directory unavailable</h1><p>{error}</p><button type="button" className="btn-secondary" onClick={() => location.reload()}>Try again</button></div>;
 
   return (
-    <div className="city-dir-layout">
-      <aside className="city-dir-sidebar">
-        <div className="city-dir-sidebar-head">
-          <span className="icon-box icon-box-md">
-            <Icon name="city" size="sm" />
-          </span>
-          <div>
-            <p className="text-heading text-sm font-semibold">Overview</p>
-            <p className="text-caption text-xs">Bosses from live DB</p>
-          </div>
+    <div className="city-directory">
+      <header className="city-directory-hero">
+        <div>
+          <p className="eyebrow">City of Los Santos • Registered organizations</p>
+          <h1>City <span className="text-gradient">Directory</span></h1>
+          <p>Find where to go, who operates each organization, what services they provide, and whether they are currently hiring.</p>
         </div>
-
-        <div className="city-dir-stats">
-          <div className="city-dir-stat">
-            <p className="city-dir-stat-label">Total</p>
-            <p className="city-dir-stat-value">{stats.total}</p>
-          </div>
-          <div className="city-dir-stat">
-            <p className="city-dir-stat-label">Staffed</p>
-            <p className="city-dir-stat-value city-dir-stat-value-ok">
-              {stats.staffed}
-            </p>
-          </div>
-          <div className="city-dir-stat">
-            <p className="city-dir-stat-label">Vacant</p>
-            <p className="city-dir-stat-value">{stats.vacant}</p>
-          </div>
+        <div className="city-directory-stats">
+          <div><strong>{stats.total}</strong><span>Listings</span></div>
+          <div><strong>{stats.operated}</strong><span>Operated</span></div>
+          <div><strong>{stats.hiring}</strong><span>Hiring</span></div>
         </div>
+      </header>
 
-        <nav className="city-dir-nav" aria-label="Categories">
-          <CategoryNavItem
-            id="all"
-            label="All businesses"
-            icon="building"
-            count={categoryCounts.all}
-            active={activeCategory === "all"}
-            onSelect={() => setActiveCategory("all")}
-          />
-          {categories.map((cat) => (
-            <CategoryNavItem
-              key={cat.id}
-              id={cat.id}
-              label={cat.label}
-              icon={CATEGORY_ICONS[cat.id] || "building"}
-              count={categoryCounts[cat.id] ?? 0}
-              active={activeCategory === cat.id}
-              accent={CATEGORY_ACCENTS[cat.id]}
-              onSelect={() => setActiveCategory(cat.id)}
-            />
-          ))}
-        </nav>
-      </aside>
-
-      <div className="city-dir-main">
-        <header className="city-dir-main-header">
-          <p className="eyebrow">Live server data</p>
-          <h1 className="text-heading font-display mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
-            City <span className="text-gradient">directory</span>
-          </h1>
-          <p className="text-body mt-2 text-sm">
-            Whitelisted businesses and departments — who runs them and where to
-            find them in Los Santos.
-          </p>
-        </header>
-
-        <div className="city-dir-toolbar">
-          <label className="city-dir-search">
-            <span className="sr-only">Search businesses</span>
-            <Icon
-              name="building"
-              size="xs"
-              className="text-caption pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2"
-            />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search name, location, owner…"
-            />
-          </label>
-          <p className="city-dir-result-count text-caption text-xs tabular-nums">
-            {filtered.length} {filtered.length === 1 ? "business" : "businesses"}
-          </p>
+      <div className="city-directory-toolbar">
+        <div className="city-category-pills">
+          <button className={activeCategory === "all" ? "active" : ""} onClick={() => setActiveCategory("all")}>All <span>{businesses.length}</span></button>
+          {categories.map((category) => <button key={category.id} className={activeCategory === category.id ? "active" : ""} onClick={() => setActiveCategory(category.id)}>{category.label} <span>{category.businesses.length}</span></button>)}
         </div>
-
-        {sections.length === 0 ? (
-          <div className="city-dir-empty">
-            <span className="icon-box icon-box-lg mx-auto">
-              <Icon name="building" size="md" />
-            </span>
-            <p className="text-heading font-display mt-4 font-semibold">
-              No matches
-            </p>
-            <p className="text-body mt-2 text-sm">
-              Try another category or search term.
-            </p>
-          </div>
-        ) : (
-          sections.map((section) => (
-            <section key={section.id} className="city-dir-section">
-              {sections.length > 1 || section.id === "search" ? (
-                <div className="city-dir-section-head">
-                  <h2 className="text-heading font-display text-sm font-semibold">
-                    {section.label}
-                  </h2>
-                  <span className="text-caption text-xs tabular-nums">
-                    {section.businesses.length}
-                  </span>
-                </div>
-              ) : null}
-              <div className="city-dir-grid">
-                {section.businesses.map((biz) => (
-                  <BusinessCard key={biz.jobKey} business={biz} />
-                ))}
-              </div>
-            </section>
-          ))
-        )}
+        <label className="city-directory-search">
+          <i className="fa-regular fa-magnifying-glass" />
+          <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search business, location, service, owner…" />
+        </label>
       </div>
+
+      <div className="city-directory-count">Showing {filtered.length} {filtered.length === 1 ? "listing" : "listings"}</div>
+      {filtered.length ? (
+        <div className="city-directory-grid">
+          {filtered.map((business) => <BusinessCard key={business.jobKey} business={business} />)}
+        </div>
+      ) : <div className="city-empty"><i className="fa-regular fa-building" /><h2>No matching listings</h2><p>Try another search or category.</p></div>}
     </div>
   );
 }
 
-function CategoryNavItem({
-  id,
-  label,
-  icon,
-  count,
-  active,
-  accent,
-  onSelect,
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`city-dir-nav-item ${active ? "city-dir-nav-item-active" : ""}`}
-    >
-      <span
-        className={`city-dir-nav-accent ${accent || ""}`}
-        aria-hidden={!accent}
-      />
-      <span className="city-dir-nav-icon">
-        <Icon name={icon} size="xs" duotone={icon !== "building"} />
-      </span>
-      <span className="city-dir-nav-label">{label}</span>
-      <span className="city-dir-nav-count tabular-nums">{count}</span>
-    </button>
-  );
-}
-
 function BusinessCard({ business }) {
-  const hasOwners = business.owners?.length > 0;
-  const accent =
-    CATEGORY_ACCENTS[business.category] || "city-dir-accent-other";
-
+  const owner = business.owners?.[0];
+  const hiringLabel = business.hiringStatus === "hiring" ? "Now hiring" : business.hiringStatus === "not_hiring" ? "Not hiring" : "Hiring status unknown";
   return (
-    <article className={`city-dir-card ${accent}`}>
-      <div className="city-dir-card-top">
-        <span className="icon-box icon-box-md shrink-0">
-          <Icon name={business.icon || "building"} size="xs" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="text-heading truncate font-semibold">
-              {business.name}
-            </h3>
-            <span
-              className={
-                hasOwners ? "city-dir-pill-ok" : "city-dir-pill-vacant"
-              }
-            >
-              {hasOwners ? "Staffed" : "Vacant"}
-            </span>
-          </div>
-          <p className="text-caption mt-0.5 text-xs">
-            {business.categoryLabel}
-          </p>
+    <article className={`city-business-card ${business.isFeatured ? "city-business-featured" : ""}`}>
+      <div className="city-business-top">
+        <div className="city-business-mark">
+          {business.logoUrl ? <img src={business.logoUrl} alt="" loading="lazy" /> : <Icon name={business.icon || CATEGORY_ICONS[business.category] || "building"} size="sm" />}
         </div>
+        <div className="min-w-0"><div className="city-business-title-line"><h2>{business.name}</h2>{business.isFeatured && <span>Featured</span>}</div><p>{business.categoryLabel}</p></div>
       </div>
 
-      <div className="city-dir-card-location">
-        <Icon name="route" size="xs" className="text-caption shrink-0" />
-        <p className="text-body truncate text-sm">{business.location}</p>
-      </div>
+      <p className="city-business-description">{business.description || `Registered ${business.categoryLabel?.toLowerCase() || "organization"} serving the Mystic Dreams community.`}</p>
 
-      <div className="city-dir-card-owner">
-        <p className="city-dir-card-owner-label">Owner</p>
-        {hasOwners ? (
-          <ul className="city-dir-owner-list">
-            {business.owners.map((owner) => (
-              <li key={owner.citizenid}>
-                <p className="text-heading truncate text-sm font-medium">
-                  {owner.characterName}
-                </p>
-                {owner.gradeName && (
-                  <p className="text-caption truncate text-xs">
-                    {owner.gradeName}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-caption text-sm italic">No owner on file</p>
-        )}
+      <dl className="city-business-details">
+        <div><dt><i className="fa-regular fa-location-dot" /> Location</dt><dd>{business.location}</dd></div>
+        <div><dt><i className="fa-regular fa-phone" /> Phone</dt><dd>{business.phone || "Not listed"}</dd></div>
+        <div><dt><i className="fa-regular fa-clock" /> Hours</dt><dd>{business.hours || "Hours vary"}</dd></div>
+        <div><dt><i className="fa-regular fa-user-tie" /> Management</dt><dd>{owner ? owner.characterName : "No owner on file"}</dd></div>
+      </dl>
+
+      {business.services?.length > 0 && <div className="city-business-services">{business.services.slice(0, 5).map((service) => <span key={service}>{service}</span>)}</div>}
+      <div className="city-business-footer">
+        <span className={`city-hiring city-hiring-${business.hiringStatus}`}>{hiringLabel}</span>
+        {business.owners?.length > 1 && <span>{business.owners.length} managers on record</span>}
       </div>
     </article>
   );
 }
 
 function CitySkeleton() {
-  return (
-    <div className="city-dir-layout animate-pulse">
-      <aside className="city-dir-sidebar space-y-3">
-        <div className="surface-muted h-12 rounded-lg" />
-        <div className="city-dir-stats">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="city-dir-stat">
-              <div className="surface-muted mx-auto h-3 w-12 rounded" />
-              <div className="surface-muted mx-auto mt-2 h-7 w-8 rounded" />
-            </div>
-          ))}
-        </div>
-        <div className="space-y-2">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="surface-muted h-10 rounded-lg" />
-          ))}
-        </div>
-      </aside>
-      <div className="space-y-4">
-        <div className="surface-muted h-20 w-64 rounded" />
-        <div className="surface-muted h-11 rounded-lg" />
-        <div className="city-dir-grid">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="surface-muted h-40 rounded-xl" />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  return <div className="city-directory"><div className="city-directory-hero city-skeleton"><div /><div /></div><div className="city-directory-grid">{[1,2,3,4,5,6].map((item) => <div className="city-business-card city-skeleton-card" key={item} />)}</div></div>;
 }
